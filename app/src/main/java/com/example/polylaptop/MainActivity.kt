@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +37,15 @@ class MainActivity : ComponentActivity() {
                 } else {
                     // Hiển thị Navigation Host với Bottom Navigation
 
-                        BottomNavigationBar(navController = navController)
-                        NavigationHost(navController) // Thêm NavigationHost ở đây
+
+                    Scaffold(
+                        bottomBar = {
+                            BottomNavigationBar(navController = navController)
+                        }
+                    ) { innerPadding ->
+                        // Nội dung chính của bạn sẽ ở đây
+                        NavigationHost(navController = navController, modifier = Modifier.padding(innerPadding))
+                    }
 
                 }
             }

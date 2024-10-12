@@ -17,7 +17,7 @@ fun BottomNavigationBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
-        listOf(BottomNavItem.Home, BottomNavItem.Search, BottomNavItem.Profile).forEach { item ->
+        listOf(BottomNavItem.Home, BottomNavItem.Cart, BottomNavItem.Order,BottomNavItem.Profile).forEach { item ->
             BottomNavigationItem(
                 selected = currentRoute == item.route,
                 onClick = {
