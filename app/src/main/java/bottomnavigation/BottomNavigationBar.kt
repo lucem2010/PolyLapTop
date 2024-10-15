@@ -8,6 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -17,7 +19,12 @@ fun BottomNavigationBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
-        listOf(BottomNavItem.Home, BottomNavItem.Cart, BottomNavItem.Order,BottomNavItem.Profile).forEach { item ->
+        listOf(
+            BottomNavItem.Home,
+            BottomNavItem.Cart,
+            BottomNavItem.Order,
+            BottomNavItem.Setting
+        ).forEach { item ->
             BottomNavigationItem(
                 selected = currentRoute == item.route,
                 onClick = {
@@ -27,8 +34,20 @@ fun BottomNavigationBar(navController: NavController) {
                         restoreState = true
                     }
                 },
-                icon = { Icon(item.icon, contentDescription = null) },
-                label = { Text(item.label) }
+                icon = {
+                    Icon(
+                        item.icon,
+                        contentDescription = null,
+                        tint = if (currentRoute == item.route) Color.White else Color.Black
+                    )
+                },
+                label = {
+                    Text(
+                        item.label,
+                        fontSize = 12.sp,
+                        color = if (currentRoute == item.route) Color.White else Color.Black
+                    )
+                }
             )
         }
     }
