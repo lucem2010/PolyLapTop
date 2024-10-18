@@ -46,5 +46,20 @@ fun NavigationHost(navController: NavHostController, modifier: Modifier = Modifi
         composable("thongTinCaNhan2"){
             ThongTinCaNhan2(navController)
         }
+        composable("thongTinCaNhan") {
+            ThongTinCaNhan(navController)
+        }
+        composable("doiMatKhau") {
+            DoiMatKhau(navController) // Màn hình Đổi mật khẩu (nếu cần)
+        }
+        composable("doiMatKhau1") {
+            DoiMatKhau1(navController) // Màn hình Đổi mật khẩu (nếu cần)
+        }
+        composable("thongTinCaNhan1"){
+            ThongTinCaNhan1(navController)
+        }
+        composable("thongTinCaNhan2"){
+            ThongTinCaNhan2(navController)
+        }
     }
 }
