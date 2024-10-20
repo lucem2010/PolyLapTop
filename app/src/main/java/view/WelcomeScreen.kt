@@ -1,5 +1,8 @@
 package view
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,65 +19,127 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 
 @Composable
 fun WelcomeScreen(onNavigate: () -> Unit) {
     var currentStep by remember { mutableStateOf(0) }
-
-    // Danh sách văn bản cho các bước
     val welcomeTexts = listOf(
         "Welcome to My App",
-        "Welcome to My App 1",
-        "Welcome to My App 2"
+        "Dedicated to Providing Quality Service",
+        "Get Ready to Elevate Your Service Experience"
     )
 
-    // Giao diện cho màn hình welcome
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = welcomeTexts[currentStep], fontSize = 24.sp)
+    // State cho hiệu ứng fade-in
+    val fadeInAnimation = remember { Animatable(0f) }
 
-        // Hiển thị nút Skip
-        Button(
-            onClick = {
-                // Chuyển sang bước tiếp theo hoặc quay lại bước đầu tiên nếu đã ở bước cuối
-                currentStep = (currentStep + 1) % welcomeTexts.size
-                // Nếu đã ở bước cuối cùng, điều hướng
-                if (currentStep == 0) {
-                    onNavigate()
-                }
-            },
-            modifier = Modifier.padding(top = 16.dp)
+    // Giao diện cho màn hình welcome
+    LaunchedEffect(Unit) {
+        fadeInAnimation.animateTo(1f, animationSpec = tween(durationMillis = 2500, easing = LinearEasing))
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFF4B3A)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        // Hiệu ứng cho hình ảnh logo
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Logo Image",
+            modifier = Modifier
+                .size(100.dp)
+                .graphicsLayer(alpha = fadeInAnimation.value), // Hiệu ứng fade-in
+            contentScale = ContentScale.Crop
+        )
+
+        // Hộp chứa văn bản
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(16.dp)
         ) {
-            Text(text = "Skip")
+            val parts = welcomeTexts[currentStep].split("to ")
+            // Văn bản "Welcome"
+            Text(
+                text = parts[0],
+                fontSize = 30.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
+            )
+
+            // Văn bản "to"
+            Text(
+                text = "to",
+                fontSize = 15.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
+            )
+
+            // Văn bản "PolyLaptop"
+            Text(
+                text = parts[1],
+                fontSize = 30.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
+            )
         }
 
-        // Hiển thị 3 dấu chấm bên dưới
-        Row(
-            modifier = Modifier.padding(top = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(16.dp)
         ) {
-            (0..2).forEach { index ->
-                DotIndicator(isSelected = currentStep == index)
+            // Nút Skip
+            Button(
+                onClick = {
+                    currentStep = (currentStep + 1) % welcomeTexts.size
+                    if (currentStep == 0) {
+                        onNavigate()
+                    }
+                },
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text(text = "Skip")
+            }
+
+            // Hiển thị 3 dấu chấm bên dưới
+            Row(
+                modifier = Modifier.padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                (0..2).forEach { index ->
+                    DotIndicator(isSelected = currentStep == index)
+                }
             }
         }
+
+
     }
 
     // Sử dụng LaunchedEffect để điều hướng tự động sau 3 giây
     LaunchedEffect(currentStep) {
-        // Delay 3 giây
-        delay(3000)
-        // Chuyển sang bước tiếp theo
+        delay(3000)  // Delay 3 giây
         currentStep = (currentStep + 1) % welcomeTexts.size
-        // Nếu đã ở bước cuối cùng, điều hướng
         if (currentStep == 0) {
             onNavigate()
         }
@@ -86,7 +151,7 @@ fun DotIndicator(isSelected: Boolean) {
     val color = if (isSelected) Color.Blue else Color.Gray
     Box(
         modifier = Modifier
-            .size(12.dp)
+            .size(5.dp)
             .background(color, shape = CircleShape) // Đường viền tròn cho chấm
     )
 }

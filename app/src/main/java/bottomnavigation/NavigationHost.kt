@@ -15,12 +15,13 @@ import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan2
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
+import view.AuthScreen
 
 @Composable
 fun NavigationHost(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(navController, startDestination = BottomNavItem.Home.route, modifier = modifier) {
         composable(BottomNavItem.Home.route) { /* Home Screen UI */
-            HomeScreen()
+            HomeScreen(navController)
         }
         composable(BottomNavItem.Setting.route) { /* Search Screen UI */
             SettingScreen(navController )
@@ -31,6 +32,10 @@ fun NavigationHost(navController: NavHostController, modifier: Modifier = Modifi
         composable(BottomNavItem.Order.route) { /* Profile Screen UI */
             OrderScreen(navController)
         }
+        composable("authScreen") { /* Profile Screen UI */
+           AuthScreen(navController)
+        }
+
         composable("thongTinCaNhan") {
             ThongTinCaNhan(navController)
         }
