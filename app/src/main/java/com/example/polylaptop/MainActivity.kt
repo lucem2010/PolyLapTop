@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import bottomnavigation.BottomNavigationBar
 import bottomnavigation.NavigationHost
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
+import view.AuthScreen
 import view.WelcomeScreen
 
 class MainActivity : ComponentActivity() {
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 // Kiểm tra nếu đang trong màn hình welcome hay bottom navigation
+
                 if (startApp.value) {
                     WelcomeScreen {
                         startApp.value = false // Đặt lại trạng thái để chuyển sang màn hình chính
@@ -44,7 +46,10 @@ class MainActivity : ComponentActivity() {
                         }
                     ) { innerPadding ->
                         // Nội dung chính của bạn sẽ ở đây
-                        NavigationHost(navController = navController, modifier = Modifier.padding(innerPadding))
+                        NavigationHost(
+                            navController = navController,
+                            modifier = Modifier.padding(innerPadding)
+                        )
                     }
 
                 }
