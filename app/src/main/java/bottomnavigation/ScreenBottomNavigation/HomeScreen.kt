@@ -21,7 +21,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+<<<<<<< HEAD
 import androidx.compose.ui.draw.shadow
+=======
+>>>>>>> 16f54c5f366efc885e373132f7d95a28f12ec1c5
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -351,6 +354,7 @@ fun ProductItem() {
                 .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)) // Bo góc trên của hình ảnh
         )
 
+<<<<<<< HEAD
         Column (
             modifier = Modifier
                 .fillMaxWidth(),
@@ -389,6 +393,25 @@ Row (
         fontSize = 9.sp,
         fontWeight = FontWeight.Bold,
         color = Color.Black,
+=======
+@Composable
+fun BannerItem(imageResId: Int) {
+    Box(
+        modifier = Modifier
+            .width(350.dp)
+            .height(150.dp)
+            .padding(8.dp)
+            .border(2.dp, Color.Gray, RoundedCornerShape(5.dp))
+    ) {
+        Image(
+            painter = painterResource(id = imageResId),
+            contentDescription = "Banner",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(5.dp))
+        )
+    }
+}
+>>>>>>> 16f54c5f366efc885e373132f7d95a28f12ec1c5
 
     )
 }
