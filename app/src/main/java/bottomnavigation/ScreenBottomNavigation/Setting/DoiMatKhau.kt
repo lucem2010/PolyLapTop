@@ -68,6 +68,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.R
+import model.Screen
 
 @Composable
 fun DoiMatKhau(navController: NavController) {
@@ -155,7 +156,7 @@ fun ConfirmationBox(navController: NavController) {
         }
         Button(
             onClick = {
-                navController.navigate("doiMatKhau1")
+                navController.navigate(Screen.DoiMatKhau1.route)
             },
             enabled = isButtonEnabled.value,
             modifier = Modifier

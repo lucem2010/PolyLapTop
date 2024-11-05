@@ -1,157 +1,229 @@
 package view
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.polylaptop.R
+import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import model.Screen
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
 
 @Composable
-fun WelcomeScreen(onNavigate: () -> Unit) {
-    var currentStep by remember { mutableStateOf(0) }
-    val welcomeTexts = listOf(
-        "Welcome to My App",
-        "Dedicated to Providing Quality Service",
-        "Get Ready to Elevate Your Service Experience"
+fun WelcomeScreen(onContinue: () -> Unit) {
+    var isCircleMode by remember { mutableStateOf(true) } // Set to true by default
+    var isTextVisible by remember { mutableStateOf(false) } // New state for text visibility
+    var isLogoVisible by remember { mutableStateOf(false) } // New state for logo visibility
+    val radius = 150.dp // Bán kính cho vòng tròn cuối
+    val imageUrls = listOf(
+        "https://i.pinimg.com/564x/69/96/8a/69968a4397724231650c21084e06096f.jpg",
+        "https://i.pinimg.com/564x/d6/78/cd/d678cdbea7a3f96dd33b713f50e5ec57.jpg",
+        "https://i.pinimg.com/564x/9e/51/a8/9e51a8200285392a0ed56d62d9411ad8.jpg",
+        "https://i.pinimg.com/564x/c0/ba/00/c0ba006064edc2543d1e7708fecc2fa2.jpg",
+        "https://i.pinimg.com/564x/30/ab/5d/30ab5de83761dcad4a8a3273834a1df8.jpg",
+        "https://i.pinimg.com/736x/de/ba/3e/deba3e97461ff22e3303e70e46a5206b.jpg",
+        "https://i.pinimg.com/564x/19/3c/2d/193c2dc61869d9489df55404247dd6d4.jpg",
+        "https://i.pinimg.com/564x/21/98/b3/2198b3ef96e2a1a7027664cd569d23ec.jpg"
     )
 
-    // State cho hiệu ứng fade-in
-    val fadeInAnimation = remember { Animatable(0f) }
+    val logoUrl =
+        "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png" // Logo URL
 
-    // Giao diện cho màn hình welcome
-    LaunchedEffect(Unit) {
-        fadeInAnimation.animateTo(1f, animationSpec = tween(durationMillis = 2500, easing = LinearEasing))
+    // Tạo danh sách Animatable cho vị trí x và y của mỗi hình ảnh
+    val imageOffsetsX = remember {
+        List(imageUrls.size) { Animatable(Random.nextFloat() * 600f - 300f) } // X offset
+    }
+    val imageOffsetsY = remember {
+        List(imageUrls.size) { Animatable(-Random.nextFloat() * 500f) } // Y offset
+    }
+    val imageAlphaAnimations = remember {
+        List(imageUrls.size) { Animatable(0f) }
     }
 
-    Column(
+    val logoAlpha = remember { Animatable(0f) } // Animatable for logo visibility
+    val letterOffsets =
+        remember { List("Poly Laptop".length) { Animatable(-50f) } } // X offsets for letters
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current // Sử dụng LocalDensity để chuyển đổi Dp sang Px
+
+
+    val buttonScale = remember { Animatable(1f) }
+    LaunchedEffect(Unit) {
+        // Create an infinite loop for the pulsing effect
+        while (true) {
+            buttonScale.animateTo(
+                targetValue = 1.1f,
+                animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            )
+            buttonScale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+
+    LaunchedEffect(isCircleMode) {
+        if (isCircleMode) {
+
+
+
+
+            // Animate images to form a circle
+            imageOffsetsX.forEachIndexed { index, offsetAnimX ->
+                scope.launch {
+                    val angle = (index * (2 * PI) / imageUrls.size).toFloat()
+                    val targetX = with(density) { radius.toPx() * cos(angle) }
+                    val targetY = with(density) { radius.toPx() * sin(angle) }
+
+                    // Dần hiện ảnh
+                    imageAlphaAnimations[index].animateTo(1f, tween(500))
+
+                    // Di chuyển đến vị trí xếp thành hình tròn
+                    offsetAnimX.animateTo(
+                        targetX,
+                        animationSpec = tween(durationMillis = 2000, easing = LinearEasing)
+                    )
+                    imageOffsetsY[index].animateTo(
+                        targetY,
+                        animationSpec = tween(durationMillis = 2000, easing = LinearEasing)
+                    )
+                }
+            }
+
+            // Wait for the images to finish forming
+            delay(2500) // Adjust delay as necessary
+
+            // After forming the circle, show the text
+            isTextVisible = true
+
+            // Animate letters for "Polylaptop" one by one
+            "Poly Laptop".forEachIndexed { index, _ ->
+                scope.launch {
+                    // Add a delay for each letter to appear sequentially
+                    delay(index * 300L) // Adjust timing for letter appearance
+                    letterOffsets[index].animateTo(
+                        0f,
+                        animationSpec = tween(durationMillis = 500, easing = LinearEasing)
+                    )
+                }
+            }
+
+            // Animate the logo to appear after the text starts
+            scope.launch {
+                delay(2500) // Adjust delay for when the logo should appear
+                logoAlpha.animateTo(
+                    1f,
+                    animationSpec = tween(durationMillis = 1000)
+                ) // Animate logo appearance
+                isLogoVisible = true // Set logo visibility to true
+            }
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFF4B3A)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly,
+            .background(color = Color(0xFFFC720D)),
+        contentAlignment = Alignment.Center
     ) {
-        // Hiệu ứng cho hình ảnh logo
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo Image",
-            modifier = Modifier
-                .size(100.dp)
-                .graphicsLayer(alpha = fadeInAnimation.value), // Hiệu ứng fade-in
-            contentScale = ContentScale.Crop
-        )
-
-        // Hộp chứa văn bản
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            val parts = welcomeTexts[currentStep].split("to ")
-            // Văn bản "Welcome"
-            Text(
-                text = parts[0],
-                fontSize = 30.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
-            )
-
-            // Văn bản "to"
-            Text(
-                text = "to",
-                fontSize = 15.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
+        // Vòng tròn hình ảnh di chuyển
+        imageUrls.forEachIndexed { index, url ->
+            Image(
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(url)
+                        .build()
+                ),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
-            )
-
-            // Văn bản "PolyLaptop"
-            Text(
-                text = parts[1],
-                fontSize = 30.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.graphicsLayer(alpha = fadeInAnimation.value) // Hiệu ứng fade-in
+                    .size(50.dp) // Đặt kích thước cho hình ảnh lớn hơn một chút
+                    .graphicsLayer(
+                        translationX = imageOffsetsX[index].value,
+                        translationY = imageOffsetsY[index].value,
+                        alpha = imageAlphaAnimations[index].value
+                    )
             )
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Nút Skip
-            Button(
-                onClick = {
-                    currentStep = (currentStep + 1) % welcomeTexts.size
-                    if (currentStep == 0) {
-                        onNavigate()
-                    }
-                },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text(text = "Skip")
-            }
+        // Display the logo at the top, animated
+        Image(
+            painter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(logoUrl)
+                    .build()
+            ),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .size(100.dp) // Set logo size
+                .align(Alignment.TopCenter)
+                .graphicsLayer(alpha = logoAlpha.value) // Animate alpha for fade-in effect
+                .padding(top = 16.dp) // Optional padding
+        )
 
-            // Hiển thị 3 dấu chấm bên dưới
+        // Display the text "Polylaptop" at the center only if it's visible
+        if (isTextVisible) {
             Row(
-                modifier = Modifier.padding(top = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .align(Alignment.Center) // Center the Row
             ) {
-                (0..2).forEach { index ->
-                    DotIndicator(isSelected = currentStep == index)
+                "Poly Laptop".forEachIndexed { index, letter ->
+                    Text(
+                        text = letter.toString(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp, // Adjust font size as needed
+                        modifier = Modifier
+                            .offset(x = letterOffsets[index].value.dp)
+                    )
                 }
             }
         }
-
-
-    }
-
-    // Sử dụng LaunchedEffect để điều hướng tự động sau 3 giây
-    LaunchedEffect(currentStep) {
-        delay(3000)  // Delay 3 giây
-        currentStep = (currentStep + 1) % welcomeTexts.size
-        if (currentStep == 0) {
-            onNavigate()
+        Button(
+            onClick =onContinue,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 60.dp)
+                .scale(buttonScale.value) // Apply pulsing animation
+                .shadow(elevation = 8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White) // Set button background color
+        ) {
+            Text(text = "Mua sắm", color = Color.Magenta)
+            Text(text = " ngay", color = Color.Blue)
         }
     }
 }
 
-@Composable
-fun DotIndicator(isSelected: Boolean) {
-    val color = if (isSelected) Color.Blue else Color.Gray
-    Box(
-        modifier = Modifier
-            .size(5.dp)
-            .background(color, shape = CircleShape) // Đường viền tròn cho chấm
-    )
-}
+
+
+
+

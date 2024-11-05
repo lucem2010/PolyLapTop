@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.polylaptop.R
+import model.Screen
 
 @Composable
 fun ThongTinCaNhan(navController: NavController) {
@@ -122,7 +123,7 @@ fun ProfileCard(
                 .fillMaxWidth()
                 .padding(vertical = 10.dp, horizontal = 20.dp)
                 .clickable {
-                    navController.navigate("thongTinCaNhan1")
+                    navController.navigate(Screen.ThongTinCaNhan1.route)
                 },
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,

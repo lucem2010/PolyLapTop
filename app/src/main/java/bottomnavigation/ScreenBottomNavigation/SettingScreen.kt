@@ -40,9 +40,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.polylaptop.R
+import model.Screen
 
 @Composable
-fun SettingScreen(navController: NavController) {
+fun SettingScreen  (bottomNavController: NavController,
+mainNavController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,7 +109,7 @@ fun SettingScreen(navController: NavController) {
                 iconResId = R.drawable.person2,
                 title = "Thông tin cá nhân",
                 onClick = {
-                    navController.navigate("thongTinCaNhan")
+                    mainNavController.navigate(Screen.ThongTinCaNhan.route)
                 }
             )
 
@@ -118,7 +120,7 @@ fun SettingScreen(navController: NavController) {
                 iconResId = R.drawable.changepassword3,
                 title = "Đổi mật khẩu",
                 onClick = {
-                    navController.navigate("doiMatKhau")
+                    mainNavController.navigate(Screen.DoiMatKhau.route)
                 }
             )
         }
@@ -138,14 +140,7 @@ fun SettingScreen(navController: NavController) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Layout Yêu thích
-            SettingItem(
-                iconResId = R.drawable.heart3,
-                title = "Yêu thích",
-                onClick = {
-                    navController.navigate("yeuThich")
-                }
-            )
+
 
             DividerLine()
 
@@ -154,7 +149,7 @@ fun SettingScreen(navController: NavController) {
                 iconResId = R.drawable.shopping1,
                 title = "Lịch sử mua hàng",
                 onClick = {
-                    navController.navigate("lichSuMuaHang")
+                    mainNavController.navigate("lichSuMuaHang")
                 }
             )
         }
@@ -179,20 +174,13 @@ fun SettingScreen(navController: NavController) {
                 iconResId = R.drawable.heart3,
                 title = "Trợ giúp và hỗ trợ",
                 onClick = {
-                    navController.navigate("troGiupVaHoTro")
+                    mainNavController.navigate("troGiupVaHoTro")
                 }
             )
 
             DividerLine()
 
-            // Layout Bảo mật
-            SettingItem(
-                iconResId = R.drawable.shopping1,
-                title = "Bảo mật",
-                onClick = {
-                    navController.navigate("baoMat")
-                }
-            )
+
         }
 
         val isChecked = remember { mutableStateOf(false) }
@@ -330,8 +318,8 @@ fun DividerLine() {
     )
 }
 
-@Composable
-@Preview(showBackground = true)
-fun SettingScreenPreview() {
-    SettingScreen(navController = rememberNavController())
-}
+//@Composable
+//@Preview(showBackground = true)
+//fun SettingScreenPreview() {
+//    SettingScreen(mainNavController = rememberNavController())
+//}
