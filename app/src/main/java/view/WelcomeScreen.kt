@@ -24,9 +24,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
@@ -224,6 +227,10 @@ fun WelcomeScreen(onContinue: () -> Unit) {
 }
 
 
-
+@Composable
+@Preview(showBackground = true)
+private fun WelcomeScreenPreview() {
+    WelcomeScreen(onContinue = {})
+}
 
 

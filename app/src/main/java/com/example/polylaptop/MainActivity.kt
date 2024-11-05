@@ -22,6 +22,7 @@ import bottomnavigation.BottomNavigationBar
 import bottomnavigation.ScreenBottomNavigation.CartScreen
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
+import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApp()
         }
-        
+
     }
 }
 
@@ -55,7 +56,9 @@ fun MyApp() {
                 navController.navigate(Screen.BottomNav.route)
             })
         }
-
+        composable(Screen.ProductDetail.route) {
+            ProductDetail(navController = navController)
+        }
 
         composable(Screen.DoiMatKhau.route) {
             DoiMatKhau(navController)
@@ -89,16 +92,20 @@ fun MyApp() {
                     startDestination = BottomNavItem.Home.route,
                     Modifier.padding(innerPadding)
                 ) {
-                    composable(BottomNavItem.Home.route) { HomeScreen(
-                        bottomNavController = bottomNavController,
-                        mainNavController = navController
-                    ) }
+                    composable(BottomNavItem.Home.route) {
+                        HomeScreen(
+                            bottomNavController = bottomNavController,
+                            mainNavController = navController
+                        )
+                    }
                     composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController) }
                     composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController) }
-                    composable(BottomNavItem.Setting.route) { SettingScreen(
-                        bottomNavController = bottomNavController,
-                        mainNavController = navController
-                    ) }
+                    composable(BottomNavItem.Setting.route) {
+                        SettingScreen(
+                            bottomNavController = bottomNavController,
+                            mainNavController = navController
+                        )
+                    }
                 }
             }
         }

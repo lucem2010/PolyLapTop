@@ -1,5 +1,7 @@
 package model
 
+import com.example.polylaptop.R
+
 data class Movie(
     val title: String,
     val year: String,
@@ -9,3 +11,5 @@ data class Movie(
     val shotDescription: String,
     val posterUrl: String
 )
+
+

@@ -73,15 +73,15 @@ fun OrderScreen(navController: NavController) {
                 .padding(top = 20.dp, start = 20.dp, end = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.left),
-                contentDescription = "Back",
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable {
-                        navController.popBackStack()
-                    }
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.left),
+//                contentDescription = "Back",
+//                modifier = Modifier
+//                    .size(24.dp)
+//                    .clickable {
+//                        navController.popBackStack()
+//                    }
+//            )
 
             Text(
                 text = "Thông báo",

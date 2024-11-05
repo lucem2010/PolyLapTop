@@ -76,8 +76,7 @@ fun DoiMatKhau1(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .padding(top = 20.dp, start = 20.dp, end = 20.dp),
+                .padding(top = 30.dp, start = 20.dp, end = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
