@@ -58,7 +58,7 @@ fun HomeScreen(
 
 
     var currentImageIndex by remember { mutableStateOf(0) }
-    var isRedAndVisible  by remember { mutableStateOf(true) }
+    var isRedAndVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -100,8 +100,7 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = Color(0xFFFC720D))
-                ,
+                    .background(color = Color(0xFFFC720D)),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -205,7 +204,7 @@ fun HomeScreen(
                 item {
                     Column {
                         AnimatedDivider(
-                            isVisible =isRedAndVisible,
+                            isVisible = isRedAndVisible,
                             startToEnd = true, // Kéo dài từ trái qua phải
                             color = Color(0xFFFFA500)
                         )
@@ -224,9 +223,9 @@ fun HomeScreen(
                                     scaleY = 0.95f
                                 },
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ){
+                        ) {
                             items(4) {
-                                NewProductItem()
+                                NewProductItem(navController = mainNavController)
                             }
                         }
 
@@ -268,10 +267,10 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        ProductItem()
+                        ProductItem(navController = mainNavController)
 
                         if (index + 1 < 10) {
-                            ProductItem()
+                            ProductItem(navController = mainNavController)
                         }
                     }
 
@@ -284,13 +283,14 @@ fun HomeScreen(
 
 
 @Composable
-fun NewProductItem() {
+fun NewProductItem(navController: NavController) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(120.dp)
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
+            .clickable { navController.navigate(Screen.ProductDetail.route) }
     ) {
         Image(
             painter = painterResource(id = R.drawable.macbook),
@@ -299,59 +299,15 @@ fun NewProductItem() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(90.dp)
-                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)) // Bo góc trên của hình ảnh
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 6.dp,
+                        topEnd = 6.dp
+                    )
+                ) // Bo góc trên của hình ảnh
         )
 
-        Column (
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-
-        ) {
-            Text(
-                text = "Macbook",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-
-            )
-
-                Text(
-                    text = "300000Đ",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red,
-                    textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
-                )
-
-
-
-        }
-
-    }
-}
-
-
-
-@Composable
-fun ProductItem() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(150.dp)
-            .shadow(8.dp, RoundedCornerShape(6.dp))
-            .background(Color.White, shape = RoundedCornerShape(6.dp))
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.macbook),
-            contentDescription = "Product Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)) // Bo góc trên của hình ảnh
-        )
-
-        Column (
+        Column(
             modifier = Modifier
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -371,27 +327,6 @@ fun ProductItem() {
                 color = Color.Red,
                 textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
             )
-Row (
-    modifier = Modifier
-        .fillMaxWidth()
-        .padding(4.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
-){
-    Text(
-        text = "300000Đ",
-        fontSize = 10.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.Black,
-
-    )
-    Text(
-        text = "329",
-        fontSize = 9.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.Black,
-
-    )
-}
 
 
         }
@@ -400,7 +335,78 @@ Row (
 }
 
 
+@Composable
+fun ProductItem(navController: NavController) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(150.dp)
+            .shadow(8.dp, RoundedCornerShape(6.dp))
+            .background(Color.White, shape = RoundedCornerShape(6.dp))
+            .clickable { navController.navigate(Screen.ProductDetail.route) }
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.macbook),
+            contentDescription = "Product Image",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 6.dp,
+                        topEnd = 6.dp
+                    )
+                ) // Bo góc trên của hình ảnh
+        )
 
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+
+        ) {
+            Text(
+                text = "Macbook",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+
+                )
+
+            Text(
+                text = "300000Đ",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Red,
+                textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "300000Đ",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+
+                    )
+                Text(
+                    text = "329",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+
+                    )
+            }
+
+
+        }
+
+    }
+}
 
 
 @Composable

@@ -279,11 +279,7 @@ fun ProductDetail(navController: NavController) {
             }
         }
 
-        if (isReviewDropdownVisible) {
-            items(reviewData) { review ->
-                ReviewItem(review)
-            }
-        }
+
         // Dropdown cho thông số sản phẩm
         item {
             Column(
@@ -331,6 +327,11 @@ fun ProductDetail(navController: NavController) {
                     .fillMaxHeight() // Áp dụng fillMaxHeight cho phần mô tả để không bị thiếu chữ
             )
         }
+        if (isReviewDropdownVisible) {
+            items(reviewData) { review ->
+                ReviewItem(review)
+            }
+        }
         // Nút thêm vào giỏ hàng
         item {
             Row(
@@ -373,6 +374,7 @@ fun ProductDetail(navController: NavController) {
                 }
             }
         }
+
     }
 }
 
