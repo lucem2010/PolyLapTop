@@ -36,12 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 import model.Screen
-import view.WelcomeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +58,7 @@ fun HomeScreen(
 
 
     var currentImageIndex by remember { mutableStateOf(0) }
-    var isRedAndVisible by remember { mutableStateOf(true) }
+    var isRedAndVisible  by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -102,7 +100,8 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = Color(0xFFFC720D)),
+                    .background(color = Color(0xFFFC720D))
+                ,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -110,9 +109,7 @@ fun HomeScreen(
                     model = imgLogo,
                     contentDescription = "Logo",
                     modifier = Modifier
-                        .size(50.dp) // Set size of the image
-                    .padding(start = 16.dp)
-                    ,
+                        .size(50.dp), // Set size of the image
                     contentScale = ContentScale.Fit // Scale the image to fit within the size
                 )
 
@@ -157,7 +154,6 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth() // Make image fill the available width
                         .height(160.dp) // Set the height to 100 dp
-                        .padding(top = 10.dp, bottom = 10.dp)
                 )
             }
 
@@ -167,7 +163,8 @@ fun HomeScreen(
                 placeholder = { Text(text = "Tìm kiếm") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp)
+                    .padding(horizontal = 16.dp)
+                    .height(50.dp)
                     .border(
                         width = 2.dp,
                         color = Color.Gray,
@@ -208,7 +205,7 @@ fun HomeScreen(
                 item {
                     Column {
                         AnimatedDivider(
-                            isVisible = isRedAndVisible,
+                            isVisible =isRedAndVisible,
                             startToEnd = true, // Kéo dài từ trái qua phải
                             color = Color(0xFFFFA500)
                         )
@@ -216,8 +213,7 @@ fun HomeScreen(
                             text = "New",
                             fontSize = 22.sp,
                             color = textColor,
-                            style = TextStyle(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            style = TextStyle(fontWeight = FontWeight.Bold)
                         )
                         LazyRow(
                             modifier = Modifier
@@ -228,9 +224,9 @@ fun HomeScreen(
                                     scaleY = 0.95f
                                 },
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
+                        ){
                             items(4) {
-                                NewProductItem(navController = mainNavController)
+                                NewProductItem()
                             }
                         }
 
@@ -272,10 +268,10 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        ProductItem(navController = mainNavController)
+                        ProductItem()
 
                         if (index + 1 < 10) {
-                            ProductItem(navController = mainNavController)
+                            ProductItem()
                         }
                     }
 
@@ -288,17 +284,13 @@ fun HomeScreen(
 
 
 @Composable
-fun NewProductItem(navController: NavController) {
+fun NewProductItem() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(120.dp)
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable {
-                // Điều hướng đến ProductDetail khi nhấp vào item
-                navController.navigate(Screen.ProductDetail.route)
-            }
     ) {
         Image(
             painter = painterResource(id = R.drawable.macbook),
@@ -307,15 +299,10 @@ fun NewProductItem(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(90.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 6.dp,
-                        topEnd = 6.dp
-                    )
-                ) // Bo góc trên của hình ảnh
+                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)) // Bo góc trên của hình ảnh
         )
 
-        Column(
+        Column (
             modifier = Modifier
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -326,15 +313,16 @@ fun NewProductItem(navController: NavController) {
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
 
+            )
+
+                Text(
+                    text = "300000Đ",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red,
+                    textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
                 )
 
-            Text(
-                text = "300000Đ",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Red,
-                textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
-            )
 
 
         }
@@ -343,18 +331,15 @@ fun NewProductItem(navController: NavController) {
 }
 
 
+
 @Composable
-fun ProductItem(navController: NavController) {
+fun ProductItem() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(150.dp)
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable {
-                // Điều hướng đến ProductDetail khi nhấp vào item
-                navController.navigate(Screen.ProductDetail.route)
-            }
     ) {
         Image(
             painter = painterResource(id = R.drawable.macbook),
@@ -363,16 +348,10 @@ fun ProductItem(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 6.dp,
-                        topEnd = 6.dp
-                    )
-                ) // Bo góc trên của hình ảnh
+                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)) // Bo góc trên của hình ảnh
         )
 
-
-        Column(
+        Column (
             modifier = Modifier
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -392,49 +371,36 @@ fun ProductItem(navController: NavController) {
                 color = Color.Red,
                 textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "300000Đ",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+Row (
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(4.dp),
+    horizontalArrangement = Arrangement.SpaceBetween,
+){
+    Text(
+        text = "300000Đ",
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.Black,
 
-                    )
-                Text(
-                    text = "329",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                )
-            }
+    )
+    Text(
+        text = "329",
+        fontSize = 9.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.Black,
+
+    )
+}
+
+
         }
+
     }
 }
 
-@Composable
-fun BannerItem(imageResId: Int) {
-    Box(
-        modifier = Modifier
-            .width(350.dp)
-            .height(150.dp)
-            .padding(8.dp)
-            .border(2.dp, Color.Gray, RoundedCornerShape(5.dp))
-    ) {
-        Image(
-            painter = painterResource(id = imageResId),
-            contentDescription = "Banner",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(5.dp))
-        )
-    }
-}
+
+
 
 
 @Composable
@@ -461,13 +427,4 @@ fun AnimatedDivider(
                 .align(if (startToEnd) Alignment.CenterStart else Alignment.CenterEnd) // Căn trái hoặc phải
         )
     }
-}
-
-@Composable
-@Preview(showBackground = true)
-private fun HomeScreenPreview() {
-    HomeScreen(
-        bottomNavController = rememberNavController(),
-        mainNavController = rememberNavController()
-    )
 }
