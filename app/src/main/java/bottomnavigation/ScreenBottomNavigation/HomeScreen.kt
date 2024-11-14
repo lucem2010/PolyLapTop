@@ -1,5 +1,7 @@
 package bottomnavigation.ScreenBottomNavigation
 
+import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -10,6 +12,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +23,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,19 +40,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.polylaptop.R
 import kotlinx.coroutines.delay
+import model.ChiTietSanPham
+import model.SanPham
 import model.Screen
+import model.toJson
+import viewmodel.SanPhamViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     bottomNavController: NavController,
-    mainNavController: NavController
+    mainNavController: NavController,
+    viewModel: SanPhamViewModel = viewModel()
 ) {
+    val ipAddress = "http://192.168.16.104:5000"
     val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
 
@@ -56,7 +70,6 @@ fun HomeScreen(
         "https://i.pinimg.com/736x/6a/4a/92/6a4a9250679050818495017601ae0d63.jpg"
     )
 
-
     var currentImageIndex by remember { mutableStateOf(0) }
     var isRedAndVisible by remember { mutableStateOf(true) }
 
@@ -64,7 +77,6 @@ fun HomeScreen(
         while (true) {
             delay(2000)
             isRedAndVisible = !isRedAndVisible
-
         }
     }
 
@@ -78,25 +90,28 @@ fun HomeScreen(
         }
     }
 
+    // Lấy dữ liệu từ viewModel
+    val sanPhamList by viewModel.sanPhamList.observeAsState(emptyList())
+    val chiTietSanPhamMap by viewModel.chiTietSanPhamMap.observeAsState(emptyMap())
+    val isLoading by viewModel.isLoading.observeAsState(false)
+    val errorMessage by viewModel.errorMessage.observeAsState("")
 
-    // Khởi tạo Box để chứa các thành phần chính
+    // Gọi fetchSanPham() khi màn hình được mở
+    LaunchedEffect(Unit) {
+        viewModel.fetchSanPham()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
         // Thanh tiêu đề
-
-
-        // Nội dung chính
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-
+            modifier = Modifier.fillMaxSize()
         ) {
-
-
+            // Tiêu đề trên màn hình
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,42 +135,39 @@ fun HomeScreen(
                 )
 
                 Button(
-                    onClick = {
-                        mainNavController.navigate(Screen.Auth.route)
-                    },
+                    onClick = { mainNavController.navigate(Screen.Auth.route) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent // Background color of the button
+                        containerColor = Color.Transparent
                     ),
                     modifier = Modifier
                         .height(35.dp)
-                        .clip(RoundedCornerShape(20.dp)), // Clip the button to have rounded corners
-                    shape = RoundedCornerShape(20.dp) // Optional if you want to define shape separately
+                        .clip(RoundedCornerShape(20.dp)),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Text(
                         text = "Login",
                         color = Color.White,
-                        fontSize = 16.sp, // Slightly larger font size for better readability
-                        fontWeight = FontWeight.Bold // Bold text for emphasis
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-
-
             }
 
+            // Banner
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = bannerList[currentImageIndex], // Load image from URL
+                    model = bannerList[currentImageIndex],
                     contentDescription = null,
                     modifier = Modifier
-                        .fillMaxWidth() // Make image fill the available width
-                        .height(160.dp) // Set the height to 100 dp
+                        .fillMaxWidth()
+                        .height(160.dp)
                 )
             }
 
+            // Thanh tìm kiếm
             TextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -164,28 +176,13 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .height(50.dp)
-                    .border(
-                        width = 2.dp,
-                        color = Color.Gray,
-                        shape = RoundedCornerShape(100.dp)
-                    )
+                    .border(2.dp, Color.Gray, RoundedCornerShape(100.dp))
                     .background(Color.White, shape = RoundedCornerShape(100.dp)),
                 leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search Icon",
-                        tint = Color.Gray
-                    )
+                    Icon(imageVector = Icons.Default.Search, contentDescription = "Search Icon", tint = Color.Gray)
                 },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "Filter Icon",
-                        tint = Color.Gray,
-                        modifier = Modifier.clickable {
-                            // Handle filter click action
-                        }
-                    )
+                    Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filter Icon", tint = Color.Gray)
                 },
                 colors = TextFieldDefaults.textFieldColors(
                     containerColor = Color.Transparent,
@@ -194,217 +191,227 @@ fun HomeScreen(
                 )
             )
 
-
-            // Phần nội dung vuốt được bắt đầu từ đây
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
+            // Nội dung phần sản phẩm mới
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Tiêu đề "Mới" và danh sách ngang
-                item {
-                    Column {
-                        AnimatedDivider(
-                            isVisible = isRedAndVisible,
-                            startToEnd = true, // Kéo dài từ trái qua phải
-                            color = Color(0xFFFFA500)
-                        )
-                        Text(
-                            text = "New",
-                            fontSize = 22.sp,
-                            color = textColor,
-                            style = TextStyle(fontWeight = FontWeight.Bold)
-                        )
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp)
-                                .graphicsLayer() { // Hiệu ứng thu nhỏ hoặc phóng to khi cuộn
-                                    scaleX = 0.95f
-                                    scaleY = 0.95f
-                                },
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(4) {
-                                NewProductItem(navController = mainNavController)
+                AnimatedDivider(
+                    isVisible = isRedAndVisible,
+                    startToEnd = true,
+                    color = Color(0xFFFFA500)
+                )
+                Text(
+                    text = "New",
+                    fontSize = 22.sp,
+                    color = textColor,
+                    style = TextStyle(fontWeight = FontWeight.Bold)
+                )
+
+                if (isLoading) {
+                    CircularProgressIndicator() // Hoặc bạn có thể dùng ProgressBar
+                } else if (errorMessage.isNotEmpty()) {
+                    Text("Lỗi: $errorMessage", color = Color.Red)
+                } else {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        sanPhamList?.let { list ->
+                            items(list) { sanPham ->
+                                NewProductItem(
+                                    navController = mainNavController,
+                                    sanPham = sanPham,
+                                    chiTietSanPhamMap,
+                                    ipAddress
+                                )
                             }
                         }
+                    }
+                }
 
-                        AnimatedDivider(
-                            isVisible = isRedAndVisible,
-                            startToEnd = true, // Kéo dài từ trái qua phải
-                            color = Color(0xFFFFA500)
+                // Nội dung sản phẩm phổ biến
+                AnimatedDivider(
+                    isVisible = isRedAndVisible,
+                    startToEnd = true,
+                    color = Color(0xFFFFA500)
+                )
+
+                Text(
+                    text = "Phổ biến",
+                    fontSize = 25.sp,
+                    style = TextStyle(fontWeight = FontWeight.Bold)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Lưới sản phẩm phổ biến
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                ) {
+                    items(sanPhamList.size) { index -> // Sử dụng index để truy cập phần tử
+                        val sanPham = sanPhamList[index]
+                        ProductItem(
+                            navController = mainNavController,
+                            sanPham = sanPham,
+                            chiTietSanPhamMap = chiTietSanPhamMap,
+                            ipAddress = ipAddress
                         )
-
-
                     }
                 }
 
-                // Tiêu đề "Phổ biến" và danh sách sản phẩm dạng lưới
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Phổ biến",
-                            fontSize = 25.sp,
-                            style = TextStyle(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-
-                items(10) { index ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        ProductItem(navController = mainNavController)
-
-                        if (index + 1 < 10) {
-                            ProductItem(navController = mainNavController)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
             }
         }
     }
 }
 
 
+
+
+
+
 @Composable
-fun NewProductItem(navController: NavController) {
+fun NewProductItem(navController: NavController, sanPham: SanPham,
+                   chiTietSanPhamMap: Map<String, List<ChiTietSanPham>>,ipAddress: String) {
+    // Địa chỉ IP của mạng
+    val chiTietSanPhamList = chiTietSanPhamMap[sanPham._id]
+    val chiTietSanPham = chiTietSanPhamList?.firstOrNull()
+
+    // Chuyển đổi đối tượng thành chuỗi JSON
+    val sanPhamJson = Uri.encode(toJson(sanPham))
+    val chiTietSanPhamListJson = Uri.encode(toJson(chiTietSanPhamList ?: emptyList()))
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(120.dp)
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable { navController.navigate(Screen.ProductDetail.route) }
+            .clickable {  navController.navigate(
+                Screen.ProductDetail.route+"/${sanPhamJson}/${chiTietSanPhamListJson}"
+            ) }
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.macbook),
-            contentDescription = "Product Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 6.dp,
-                        topEnd = 6.dp
-                    )
-                ) // Bo góc trên của hình ảnh
-        )
+        // Lấy phần tử đầu tiên trong danh sách anhSP, nếu có
+        val imageUrl = sanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-
-        ) {
-            Text(
-                text = "Macbook",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-
-                )
-
-            Text(
-                text = "300000Đ",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Red,
-                textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
+        if (imageUrl != null) {
+            // Hiển thị hình ảnh từ URL của sản phẩm (nếu có)
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = sanPham.tenSP,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
             )
-
-
+        } else {
+            // Hình ảnh mặc định nếu không có URL
+            Image(
+                painter = painterResource(id = R.drawable.macbook),
+                contentDescription = "Product Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+            )
         }
 
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Hiển thị tên sản phẩm
+            Text(
+                text = sanPham.tenSP,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+//            // Hiển thị giá sản phẩm (cần thêm thuộc tính giá vào model SanPham nếu chưa có)
+//            Text(
+//                text = "${sanPham.gia}Đ",
+//                fontSize = 13.sp,
+//                fontWeight = FontWeight.Bold,
+//                color = Color.Red,
+//                textDecoration = TextDecoration.LineThrough
+//            )
+        }
     }
 }
 
 
+
+
+
+
 @Composable
-fun ProductItem(navController: NavController) {
+fun ProductItem(
+    navController: NavController,
+    sanPham: SanPham,
+    chiTietSanPhamMap: Map<String, List<ChiTietSanPham>>,
+    ipAddress: String
+) {
+    // Lấy danh sách ChiTietSanPham từ chiTietSanPhamMap theo id sản phẩm
+    val chiTietSanPhamList = chiTietSanPhamMap[sanPham._id]
+    val chiTietSanPham = chiTietSanPhamList?.firstOrNull()
+
+    // Chuyển đổi đối tượng thành chuỗi JSON
+    val sanPhamJson = Uri.encode(toJson(sanPham))
+    val chiTietSanPhamListJson = Uri.encode(toJson(chiTietSanPhamList ?: emptyList()))
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(150.dp)
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable { navController.navigate(Screen.ProductDetail.route) }
+            .clickable {  navController.navigate(
+                Screen.ProductDetail.route+"/${sanPhamJson}/${chiTietSanPhamListJson}"
+            ) }
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.macbook),
-            contentDescription = "Product Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 6.dp,
-                        topEnd = 6.dp
-                    )
-                ) // Bo góc trên của hình ảnh
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-
-        ) {
-            Text(
-                text = "Macbook",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-
-                )
-
-            Text(
-                text = "300000Đ",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Red,
-                textDecoration = TextDecoration.LineThrough // Hiệu ứng gạch ngang
-            )
-            Row(
+        val imageUrl = sanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = sanPham.tenSP,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "300000Đ",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-
-                    )
-                Text(
-                    text = "329",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-
-                    )
-            }
-
-
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.macbook),
+                contentDescription = "Product Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+            )
         }
 
+        Text(
+            text = sanPham.tenSP,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+        chiTietSanPham?.Gia?.let {
+            Text(
+                text = "$it Đ",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
     }
 }
 

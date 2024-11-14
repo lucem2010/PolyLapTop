@@ -72,7 +72,9 @@ import model.imagesItem
 
 
 @Composable
-fun ProductDetail(navController: NavController) {
+fun ProductDetail(   navController: NavController,
+                     sanPhamJson: String?,
+                     chiTietSanPhamMapJson: String?) {
     var isFavoriteVisible by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState() // State cho verticalScroll
     val imageScrollState = rememberScrollState() // State cho horizontalScroll
@@ -545,8 +547,8 @@ fun calculateAverageRating(reviews: List<Review>): Float {
 // Hàm mở rộng để định dạng số thập phân
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
-@Composable
-@Preview(showBackground = true)
-private fun ProductDetailPreview() {
-    ProductDetail(navController = rememberNavController())
-}
+//@Composable
+//@Preview(showBackground = true)
+//private fun ProductDetailPreview() {
+//    ProductDetail(navController = rememberNavController())
+//}

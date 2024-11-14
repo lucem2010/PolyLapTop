@@ -14,9 +14,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import bottomnavigation.BottomNavItem
 import bottomnavigation.BottomNavigationBar
 import bottomnavigation.ScreenBottomNavigation.CartScreen
@@ -56,8 +58,21 @@ fun MyApp() {
                 navController.navigate(Screen.BottomNav.route)
             })
         }
-        composable(Screen.ProductDetail.route) {
-            ProductDetail(navController = navController)
+        composable(
+            route = Screen.ProductDetail.route+"/{sanPhamJson}/{chiTietSanPhamMapJson}",
+            arguments = listOf(
+                navArgument("sanPhamJson") { type = NavType.StringType },
+                navArgument("chiTietSanPhamMapJson") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val sanPhamJson = backStackEntry.arguments?.getString("sanPhamJson")
+            val chiTietSanPhamMapJson = backStackEntry.arguments?.getString("chiTietSanPhamMapJson")
+
+            ProductDetail(
+                navController = navController,
+                sanPhamJson = sanPhamJson,
+                chiTietSanPhamMapJson = chiTietSanPhamMapJson
+            )
         }
 
         composable(Screen.DoiMatKhau.route) {
