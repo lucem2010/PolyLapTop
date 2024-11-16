@@ -7,8 +7,6 @@ sealed class Screen(val route: String) {
     object DoiMatKhau : Screen("doiMatKhau")
     object DoiMatKhau1 : Screen("doiMatKhau1")
     object ThongTinCaNhan : Screen("ThongTinCaNhan")
-    object ThongTinCaNhan1 : Screen("ThongTinCaNhan1")
-    object ThongTinCaNhan2 : Screen("ThongTinCaNhan2")
     object ProductDetail : Screen("ProductDetail")
 
 }

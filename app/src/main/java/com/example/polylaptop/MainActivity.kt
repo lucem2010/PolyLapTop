@@ -28,8 +28,6 @@ import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan1
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan2
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
 import model.Screen
@@ -87,13 +85,7 @@ fun MyApp() {
             ThongTinCaNhan(navController)
         }
 
-        composable(Screen.ThongTinCaNhan1.route) {
-            ThongTinCaNhan1(navController)
-        }
 
-        composable(Screen.ThongTinCaNhan2.route) {
-            ThongTinCaNhan2(navController)
-        }
 
         // Điều hướng Bottom Navigation với Scaffold và navController mới
         composable(Screen.BottomNav.route) {

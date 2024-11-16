@@ -23,6 +23,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -68,7 +71,7 @@ fun DoiMatKhau1(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFD9D9D9)),
+            .background(Color(0xFFffffff)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
@@ -76,25 +79,33 @@ fun DoiMatKhau1(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(70.dp)
                 .padding(top = 30.dp, start = 20.dp, end = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.left),
-                contentDescription = "Back",
+            IconButton(
+                onClick = { navController.popBackStack() },
                 modifier = Modifier
-                    .size(24.dp)
-                    .clickable {
-                        navController.popBackStack()
-                    }
-            )
-
-            Text(
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFF8774A))
+                    .size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIos,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(start = 5.dp)
+                )
+            }
+            androidx.compose.material.Text(
                 text = "Đổi mật khẩu",
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp),
-                fontSize = 16.sp,
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
                 textAlign = TextAlign.Center
@@ -174,11 +185,11 @@ fun DoiMatKhau1(navController: NavController) {
                     .padding(start = 20.dp, end = 20.dp)
                     .height(50.dp)
                     .background(
-                        if (isButtonEnabled.value) Color(0x809C7056) else Color(0xFFD9D9D9),
+                        if (isButtonEnabled.value) Color(0xFFF8774A) else Color(0xFFD9D9D9),
                         shape = RoundedCornerShape(5.dp)
                     ),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = if (isButtonEnabled.value) Color(0x809C7056) else Color(
+                    backgroundColor = if (isButtonEnabled.value) Color(0xFFF8774A) else Color(
                         0xFFD9D9D9
                     ),
                     contentColor = Color.White

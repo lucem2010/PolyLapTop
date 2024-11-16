@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.Screen
@@ -46,17 +47,25 @@ fun WelcomeScreen(onContinue: () -> Unit) {
     var isTextVisible by remember { mutableStateOf(false) } // New state for text visibility
     var isLogoVisible by remember { mutableStateOf(false) } // New state for logo visibility
     val radius = 150.dp // Bán kính cho vòng tròn cuối
+//    val imageUrls = listOf(
+//        "https://i.pinimg.com/564x/69/96/8a/69968a4397724231650c21084e06096f.jpg",
+//        "https://i.pinimg.com/564x/d6/78/cd/d678cdbea7a3f96dd33b713f50e5ec57.jpg",
+//        "https://i.pinimg.com/564x/9e/51/a8/9e51a8200285392a0ed56d62d9411ad8.jpg",
+//        "https://i.pinimg.com/564x/c0/ba/00/c0ba006064edc2543d1e7708fecc2fa2.jpg",
+//        "https://i.pinimg.com/564x/30/ab/5d/30ab5de83761dcad4a8a3273834a1df8.jpg",
+//        "https://i.pinimg.com/736x/de/ba/3e/deba3e97461ff22e3303e70e46a5206b.jpg",
+//        "https://i.pinimg.com/564x/19/3c/2d/193c2dc61869d9489df55404247dd6d4.jpg",
+//        "https://i.pinimg.com/564x/21/98/b3/2198b3ef96e2a1a7027664cd569d23ec.jpg"
+//    )
     val imageUrls = listOf(
-        "https://i.pinimg.com/564x/69/96/8a/69968a4397724231650c21084e06096f.jpg",
-        "https://i.pinimg.com/564x/d6/78/cd/d678cdbea7a3f96dd33b713f50e5ec57.jpg",
-        "https://i.pinimg.com/564x/9e/51/a8/9e51a8200285392a0ed56d62d9411ad8.jpg",
-        "https://i.pinimg.com/564x/c0/ba/00/c0ba006064edc2543d1e7708fecc2fa2.jpg",
-        "https://i.pinimg.com/564x/30/ab/5d/30ab5de83761dcad4a8a3273834a1df8.jpg",
-        "https://i.pinimg.com/736x/de/ba/3e/deba3e97461ff22e3303e70e46a5206b.jpg",
-        "https://i.pinimg.com/564x/19/3c/2d/193c2dc61869d9489df55404247dd6d4.jpg",
-        "https://i.pinimg.com/564x/21/98/b3/2198b3ef96e2a1a7027664cd569d23ec.jpg"
+        R.drawable.welcome1,
+        R.drawable.welcome2,
+        R.drawable.welcome3,
+        R.drawable.welcome4,
+        R.drawable.welcome5,
+        R.drawable.welcome6,
+        R.drawable.welcome7,
     )
-
     val logoUrl =
         "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png" // Logo URL
 
