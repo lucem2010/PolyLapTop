@@ -1,5 +1,8 @@
 package model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ChiTietSanPham(
     val _id: String,
     val idSanPham: String, // Kiểu String để lưu ObjectId từ MongoDB

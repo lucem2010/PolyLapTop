@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,6 +49,7 @@ import coil.compose.AsyncImage
 import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 import model.ChiTietSanPham
+import model.EncryptedPrefsManager
 import model.SanPham
 import model.Screen
 import model.toJson
@@ -101,6 +103,11 @@ fun HomeScreen(
         viewModel.fetchSanPham()
     }
 
+    // Lấy context
+    val context = LocalContext.current
+    // Lấy thông tin tài khoản (userId, username, password)
+    val (userId, username, password) = EncryptedPrefsManager.getLoginInfo(context)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -134,22 +141,29 @@ fun HomeScreen(
                     color = Color.White
                 )
 
-                Button(
-                    onClick = { mainNavController.navigate(Screen.Auth.route) },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    modifier = Modifier
-                        .height(35.dp)
-                        .clip(RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        text = "Login",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                // Kiểm tra nếu đã có thông tin người dùng thì ẩn nút login và hiển thị icon thư
+                if (userId != null && username != null && password != null) {
+                    IconButton(onClick = { /* Hành động khi nhấn vào icon thư */ }) {
+                        Icon(imageVector = Icons.Filled.Mail, contentDescription = "Icon thư")
+                    }
+                } else {
+                    Button(
+                        onClick = { mainNavController.navigate(Screen.Auth.route) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent
+                        ),
+                        modifier = Modifier
+                            .height(35.dp)
+                            .clip(RoundedCornerShape(20.dp)),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            text = "Login",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
