@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -53,6 +54,7 @@ android {
 dependencies {
     implementation(libs.androidx.runtime.livedata)
     val sheetsVersion = "1.1.1"
+    implementation ("androidx.security:security-crypto:1.0.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0")
@@ -63,6 +65,7 @@ dependencies {
     implementation ("androidx.navigation:navigation-compose:2.5.0") // Cập nhật lên phiên bản mới hơn
     implementation("io.coil-kt:coil-compose:2.2.2") // Thêm Coil cho Compose
     implementation ("com.google.android.material:material:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

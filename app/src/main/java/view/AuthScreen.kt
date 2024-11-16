@@ -71,7 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun AuthScreen(navController: NavController? = null) {
+fun AuthScreen(navController: NavController) {
     var selectedTab by remember { mutableStateOf(0) }
     var visible by remember { mutableStateOf(false) }
     var isLogoVisible by remember { mutableStateOf(false) } // New state for logo visibility
@@ -235,7 +235,7 @@ fun AuthScreen(navController: NavController? = null) {
 
                         // Hiển thị nội dung dựa trên tab đã chọn
                         when (selectedTab) {
-                            0 -> LoginScreen()
+                            0 -> LoginScreen(navController = navController)
                             1 -> RegisterScreen()
                         }
 
@@ -276,9 +276,9 @@ fun AuthScreen(navController: NavController? = null) {
     }
 }
 
-@Preview
-@Composable
-private fun showAuthScreen() {
-    AuthScreen();
-}
+//@Preview
+//@Composable
+//private fun showAuthScreen() {
+//    AuthScreen();
+//}
 
