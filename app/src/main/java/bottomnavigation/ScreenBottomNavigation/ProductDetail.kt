@@ -547,8 +547,8 @@ fun calculateAverageRating(reviews: List<Review>): Float {
 // Hàm mở rộng để định dạng số thập phân
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
-//@Composable
-//@Preview(showBackground = true)
-//private fun ProductDetailPreview() {
-//    ProductDetail(navController = rememberNavController())
-//}
+@Composable
+@Preview(showBackground = true)
+private fun ProductDetailPreview() {
+    ProductDetail(navController = rememberNavController(), null, null)
+}

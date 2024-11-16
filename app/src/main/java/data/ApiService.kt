@@ -15,15 +15,13 @@ interface ApiService {
 
 
 
-    @GET("san-pham/")
+    @GET("san-pham")
     suspend fun getSanPham(): Response<SanPhamResponse>  // Trả về SanPhamResponse
 
     @GET("chi-tiet-san-pham/{idSanPham}")
     suspend fun getChiTietSanPham(
         @Path("idSanPham") idSanPham: String
     ): Response<ChiTietSanPhamResponse>
-
-
 
 
 }
