@@ -27,12 +27,14 @@ import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
+import bottomnavigation.ScreenBottomNavigation.Setting.LocationScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
 import model.Screen
 import view.AuthScreen
 import view.WelcomeScreen
+import viewmodel.LocationViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,7 +86,9 @@ fun MyApp() {
         composable(Screen.ThongTinCaNhan.route) {
             ThongTinCaNhan(navController)
         }
-
+        composable(Screen.LocationScreen.route){
+            LocationScreen(viewModel = LocationViewModel())
+        }
 
 
         // Điều hướng Bottom Navigation với Scaffold và navController mới

@@ -54,6 +54,10 @@ android {
 dependencies {
     implementation(libs.androidx.runtime.livedata)
     val sheetsVersion = "1.1.1"
+
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.0")
+
     implementation ("androidx.security:security-crypto:1.0.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")

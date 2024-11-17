@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
@@ -28,6 +27,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,8 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.polylaptop.R
-import model.Screen
+import viewmodel.LocationViewModel
 import java.util.Calendar
 
 @Composable
@@ -65,9 +67,7 @@ fun ThongTinCaNhan(navController: NavController) {
         Spacer(modifier = Modifier.height(50.dp))
 
         ProfileCard(
-            fullName = "Nguyễn Đức Hải",
             phoneNumber = "0123456789",
-            birthDate = "22/01/2004",
             navController = navController
         )
     }
@@ -114,9 +114,7 @@ fun Header(navController: NavController) {
 
 @Composable
 fun ProfileCard(
-    fullName: String,
     phoneNumber: String,
-    birthDate: String,
     navController: NavController
 ) {
 
@@ -157,10 +155,6 @@ fun ProfileCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 30.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
-            .background(Color(0xFFFFFFFF), shape = RoundedCornerShape(5.dp))
-            .border(1.dp, Color(0xFF716D6D), RoundedCornerShape(5.dp))
-            .width(400.dp)
-            .height(500.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.img1),
@@ -169,8 +163,8 @@ fun ProfileCard(
                 .padding(top = 20.dp)
                 .size(150.dp)
                 .clip(CircleShape)
-                .border(2.dp, Color(0xFF716D6D), CircleShape)
-                .background(Color(0xFFFFFFFF)),
+                .border(2.dp, Color(0xFFF8774A), CircleShape)
+                .background(Color(0xFFF8774A)),
             contentScale = ContentScale.Crop
         )
 
@@ -187,8 +181,7 @@ fun ProfileCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
-                .padding(horizontal = 20.dp),
+                .height(50.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -211,6 +204,17 @@ fun ProfileCard(
             birthDate = selectedDate.value,
             onNgaySinhClick = { showDialogNgaySinh = true } // Mở dialog ngày sinh
         )
+        LayoutDiaChi()
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = { /* Thanh toán */ },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFF8774A) // Đổi màu sang #F8774A
+            ),
+            shape = RoundedCornerShape(5.dp) // Bo góc 10.dp
+        ) {
+            Text(text = "Lưu thông tin", color = Color.White)
+        }
     }
 
     // Dialog cho họ và tên
@@ -354,6 +358,7 @@ fun ProfileCard(
         )
     }
 }
+
 @Composable
 fun LayoutHoVaTen(
     navController: NavController,
@@ -364,7 +369,6 @@ fun LayoutHoVaTen(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
-            .padding(horizontal = 20.dp)
             .clickable { onFullNameClick() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -398,7 +402,6 @@ fun LayoutNgaySinh(
         modifier = Modifier
             .fillMaxWidth()
             .height(50.dp)
-            .padding(horizontal = 20.dp)
             .clickable { onNgaySinhClick() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -422,6 +425,128 @@ fun LayoutNgaySinh(
     }
 }
 
+@Composable
+fun LayoutDiaChi(viewModel: LocationViewModel = viewModel()) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Dữ liệu hiển thị (giả sử là tên tỉnh/quận/phường đã được chọn)
+    val selectedProvinceName by viewModel.selectedProvinceName.collectAsState()
+    val selectedDistrictName by viewModel.selectedDistrictName.collectAsState()
+    val selectedWardName by viewModel.selectedWardName.collectAsState()
+
+    // Khi ấn vào LayoutDiaChi sẽ hiển thị DialogDiaChi
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+            .height(50.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Địa chỉ", fontSize = 12.sp, color = Color.Black)
+        Text(
+            text = "$selectedWardName/$selectedDistrictName/$selectedProvinceName ",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            textAlign = TextAlign.Right,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 20.dp)
+        )
+        Image(
+            painter = painterResource(id = R.drawable.right),
+            contentDescription = "Right Arrow",
+            modifier = Modifier.size(24.dp)
+        )
+    }
+
+    // Hiển thị DialogDiaChi khi showDialog là true
+    if (showDialog) {
+        DialogDiaChi(viewModel = viewModel, onDismiss = { showDialog = false })
+    }
+}
+
+@Composable
+fun DialogDiaChi(viewModel: LocationViewModel, onDismiss: () -> Unit) {
+    val provinces by viewModel.provinces.collectAsState()
+    val districts by viewModel.districts.collectAsState()
+    val wards by viewModel.wards.collectAsState()
+
+    val selectedProvinceName by viewModel.selectedProvinceName.collectAsState()
+    val selectedDistrictName by viewModel.selectedDistrictName.collectAsState()
+    val selectedWardName by viewModel.selectedWardName.collectAsState()
+
+    // Fetch provinces on dialog load
+    LaunchedEffect(Unit) {
+        viewModel.fetchProvinces()
+    }
+
+    // Hiển thị Dialog
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Column {
+                Text(
+                    text = "Cập nhật địa chỉ",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                // Dropdown cho Tỉnh/Thành phố
+                Text("Tỉnh/Thành Phố", fontSize = 12.sp, color = Color.Black)
+                DropdownMenuWithSelection(
+                    items = provinces,
+                    selectedItem = selectedProvinceName?.let { it }, // Truyền đối tượng tỉnh vào đây
+                    onItemSelected = { province ->
+                        viewModel.selectProvince(province)  // Truyền đối tượng tỉnh vào viewModel
+                    },
+                    itemContent = { province -> Text(text = province.ProvinceName) } // Hiển thị tên tỉnh
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                // Drop-down menu cho Quận/Huyện
+                Text("Quận/Huyện", fontSize = 12.sp, color = Color.Black)
+                DropdownMenuWithSelection(
+                    items = districts,
+                    selectedItem = selectedDistrictName?.let { it },
+                    onItemSelected = { district ->
+                        viewModel.selectDistrict(district)
+                    },
+                    itemContent = { district -> Text(text = district.DistrictName) }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                // Drop-down menu cho Phường/Xã
+                Text("Phường/Xã", fontSize = 12.sp, color = Color.Black)
+                DropdownMenuWithSelection(
+                    items = wards,
+                    selectedItem = selectedWardName?.let { it },
+                    onItemSelected = { ward ->
+                        viewModel.selectWard(ward)
+                    },
+                    itemContent = { ward -> Text(text = ward.WardName) }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8774A)),
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                Text("Lưu", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                Text("Hủy", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
 
 @Composable
 fun UserNameInput(
@@ -453,6 +578,7 @@ fun UserNameInput(
         )
     }
 }
+
 @Composable
 @Preview(showBackground = true)
 fun ThongTinCaNhanPreview() {
