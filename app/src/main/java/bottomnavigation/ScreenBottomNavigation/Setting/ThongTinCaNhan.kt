@@ -1,5 +1,10 @@
 package bottomnavigation.ScreenBottomNavigation.Setting
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,14 +19,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -37,11 +52,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
 import viewmodel.LocationViewModel
 import java.util.Calendar
@@ -64,10 +83,9 @@ fun ThongTinCaNhan(navController: NavController) {
     ) {
         Header(navController = navController)
 
-        Spacer(modifier = Modifier.height(50.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         ProfileCard(
-            phoneNumber = "0123456789",
             navController = navController
         )
     }
@@ -114,28 +132,30 @@ fun Header(navController: NavController) {
 
 @Composable
 fun ProfileCard(
-    phoneNumber: String,
     navController: NavController
 ) {
-
     val context = LocalContext.current
-
     // State cho họ và tên
     var fullName by remember { mutableStateOf("Nguyễn Đức Hải") }
     var showDialogHoVaTen by remember { mutableStateOf(false) }
-
+    // State cho email
+    var email by remember { mutableStateOf("haindph39815@fpt.edu.vn") }
+    var showDialogEmail by remember { mutableStateOf(false) }
+    var emailError by remember { mutableStateOf(false) }
     // State cho ngày sinh
     var birthDate by remember { mutableStateOf("22/01/2004") }
     var showDialogNgaySinh by remember { mutableStateOf(false) }
+    // State cho SĐT
+    var phoneNumber by remember { mutableStateOf("0123456789") }
+    var showDialogSoDienThoai by remember { mutableStateOf(false) }
 
+    var phoneNumberError by remember { mutableStateOf(false) }
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
-
     // State cho ngày sinh đã chọn
     val selectedDate = remember { mutableStateOf(birthDate) }
-
     // Khởi tạo DatePickerDialog
     val datePickerDialog = remember {
         android.app.DatePickerDialog(
@@ -149,58 +169,45 @@ fun ProfileCard(
         )
     }
 
+    // Hàm kiểm tra định dạng email
+    fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    // Hàm kiểm tra định dạng SDT
+    fun isValidPhoneNumber(phone: String): Boolean {
+        // Kiểm tra số điện thoại có đúng 10 chữ số và bắt đầu bằng số 0
+        return phone.matches(Regex("^0\\d{9}$"))
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 30.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
+            .padding(top = 60.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.img1),
-            contentDescription = "Profile Image",
-            modifier = Modifier
-                .padding(top = 20.dp)
-                .size(150.dp)
-                .clip(CircleShape)
-                .border(2.dp, Color(0xFFF8774A), CircleShape)
-                .background(Color(0xFFF8774A)),
-            contentScale = ContentScale.Crop
-        )
-
-        Spacer(modifier = Modifier.height(60.dp))
+        ProfilePicture()
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Gọi LayoutHoVaTen
         LayoutHoVaTen(
-            navController = navController,
             fullName = fullName,
             onFullNameClick = { showDialogHoVaTen = true } // Mở dialog họ và tên
         )
+        //layoutEmail
+        LayoutEmail(
+            email = email,
+            onEmailClick = { showDialogEmail = true }
 
-        // layoutSoDienThoai
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Số điện thoại", fontSize = 12.sp, color = Color.Black)
-            Text(
-                text = phoneNumber,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                textAlign = TextAlign.Right,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 40.dp)
-            )
-        }
+        )
+        //layoutSoDienThoai
+        LayoutSoDienThoai(
+            phoneNumber = phoneNumber,
+            onphoneNumberClick = { showDialogSoDienThoai = true }
 
+        )
         // layoutNgaySinh
         LayoutNgaySinh(
-            navController = navController,
             birthDate = selectedDate.value,
             onNgaySinhClick = { showDialogNgaySinh = true } // Mở dialog ngày sinh
         )
@@ -223,16 +230,12 @@ fun ProfileCard(
             onDismissRequest = { showDialogHoVaTen = false },
             text = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+
                 ) {
                     Text(
                         text = "Cập nhật Họ và Tên",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -251,10 +254,9 @@ fun ProfileCard(
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
             },
-            dismissButton = {
+            confirmButton = {
                 // Nút Lưu
                 Button(
                     onClick = {
@@ -266,7 +268,7 @@ fun ProfileCard(
                     Text("Lưu", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             },
-            confirmButton = {
+            dismissButton = {
                 // Nút Hủy
                 Button(
                     onClick = { showDialogHoVaTen = false },
@@ -279,23 +281,162 @@ fun ProfileCard(
 
             )
     }
+    //Dialog cho email
+    if (showDialogEmail) {
+        AlertDialog(
+            onDismissRequest = { showDialogEmail = false },
+            text = {
+                Column(
 
+                ) {
+                    Text(
+                        text = "Cập nhật Email",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    TextField(
+                        value = email,
+                        onValueChange = { newValue ->
+                            email = newValue
+                            emailError = !isValidEmail(newValue) // Kiểm tra lỗi định dạng email
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(5.dp)),
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        isError = emailError, // Hiển thị lỗi nếu sai định dạng
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email // Bàn phím nhập email
+                        ),
+                    )
+                    // Hiển thị lỗi nếu email sai định dạng
+                    if (emailError) {
+                        Text(
+                            text = "Email không hợp lệ!",
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 5.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                // Nút Lưu
+                Button(
+                    onClick = {
+                        showDialogEmail = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8774A)),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("Lưu", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                // Nút Hủy
+                Button(
+                    onClick = { showDialogEmail = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+
+            )
+    }
+    //Dialog cho SĐT
+    if (showDialogSoDienThoai) {
+        AlertDialog(
+            onDismissRequest = { showDialogSoDienThoai = false },
+            text = {
+                Column(
+
+                ) {
+                    Text(
+                        text = "Cập nhật số điện thoại",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    TextField(
+                        value = phoneNumber,
+                        onValueChange = { newValue ->
+                            phoneNumber = newValue
+                            phoneNumberError =
+                                !isValidPhoneNumber(newValue) // Kiểm tra số điện thoại hợp lệ
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(5.dp)),
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        isError = phoneNumberError, // Hiển thị lỗi nếu không hợp lệ
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Phone // Chọn bàn phím số điện thoại
+                        ),
+                    )
+                    // Hiển thị lỗi nếu số điện thoại không hợp lệ
+                    if (phoneNumberError) {
+                        Text(
+                            text = "Số điện thoại không hợp lệ!",
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 5.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                // Nút Lưu
+                Button(
+                    onClick = {
+                        showDialogSoDienThoai = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8774A)),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("Lưu", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                // Nút Hủy
+                Button(
+                    onClick = { showDialogSoDienThoai = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+
+            )
+    }
     // Dialog cho ngày sinh
     if (showDialogNgaySinh) {
         AlertDialog(
             onDismissRequest = { showDialogNgaySinh = false },
             text = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Cập nhật ngày sinh",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Box(
@@ -335,7 +476,7 @@ fun ProfileCard(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             },
-            dismissButton = {
+            confirmButton = {
                 Button(
                     onClick = {
                         showDialogNgaySinh = false
@@ -346,7 +487,7 @@ fun ProfileCard(
                     Text("Lưu", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             },
-            confirmButton = {
+            dismissButton = {
                 Button(
                     onClick = { showDialogNgaySinh = false },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
@@ -360,67 +501,308 @@ fun ProfileCard(
 }
 
 @Composable
+fun ProfilePicture() {
+    val context = LocalContext.current
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
+    val imageBitmap = remember { mutableStateOf<ImageBitmap?>(null) }
+    ///// Trạng thái khi thay đổi ảnh
+    var isImageUpdated by remember { mutableStateOf(false) }
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            imageBitmap.value = it.asImageBitmap() // Chuyển Bitmap thành ImageBitmap và cập nhật
+            imageUri.value = null // Reset URI vì chúng ta đang sử dụng Bitmap
+            isImageUpdated = true // Đánh dấu đã thay đổi ảnh
+        }
+    }
+
+    // Gallery launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            imageUri.value = uri // Lưu URI ảnh từ thư viện
+            imageBitmap.value = null // Reset Bitmap vì chúng ta đang sử dụng URI
+            isImageUpdated = true // Đánh dấu đã thay đổi ảnh
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch() // Mở camera nếu quyền được cấp
+        } else {
+            Toast.makeText(context, "Quyền truy cập Camera đã bị từ chối.", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(150.dp)
+        ) {
+            // Hiển thị ảnh dựa trên trạng thái
+            if (isImageUpdated) {
+                imageBitmap.value?.let { bitmap ->
+                    // Hiển thị ảnh chụp từ camera
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
+                    )
+                } ?: imageUri.value?.let { uri ->
+                    // Hiển thị ảnh từ thư viện
+                    Image(
+                        painter = rememberAsyncImagePainter(uri),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else {
+                // Hiển thị ảnh mặc định nếu chưa thay đổi
+                Image(
+                    painter = painterResource(id = R.drawable.img1),
+                    contentDescription = "Default Profile Picture",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .border(1.dp, Color(0x99F8774A), CircleShape)
+                        .background(Color(0x99F8774A)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            // Icon camera
+            Icon(
+                imageVector = Icons.Default.CameraAlt, // Icon từ bộ Material Icons
+                contentDescription = "Camera Icon",
+                modifier = Modifier
+                    .align(Alignment.BottomEnd) // Đặt ở góc dưới bên phải
+                    .size(40.dp)
+                    .background(Color.White, CircleShape)
+                    .padding(8.dp)
+                    .clickable { cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA) }, // Hành động khi click
+                tint = Color(0xFF000000) // Màu của icon
+            )
+        }
+        // Button để chọn ảnh từ thư viện
+        Button(
+            onClick = { galleryLauncher.launch("image/*") },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0x99F8774A) // Đổi màu sang #F8774A
+            ),
+            shape = RoundedCornerShape(5.dp) // Bo góc 10.dp
+        ) {
+            Text(text = "Thay ảnh đại diện", color = Color.White)
+        }
+
+    }
+}
+
+@Composable
 fun LayoutHoVaTen(
-    navController: NavController,
     fullName: String,
     onFullNameClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
-            .clickable { onFullNameClick() },
+            .height(60.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "Họ và tên", fontSize = 12.sp, color = Color.Black)
-        Text(
-            text = fullName,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            textAlign = TextAlign.Right,
+        Icon(
+            imageVector = Icons.Outlined.Person, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 20.dp)
+                .size(24.dp),
+            tint = Color(0xFF000000) // Màu của icon
         )
-        Image(
-            painter = painterResource(id = R.drawable.right),
-            contentDescription = "Right Arrow",
-            modifier = Modifier.size(24.dp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Họ và tên", fontSize = 12.sp, color = Color.Black,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = fullName,
+                fontSize = 14.sp,
+                color = Color.Black,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Default.Edit, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onFullNameClick() },
+            tint = Color(0xFF000000) // Màu của icon
+        )
+    }
+}
+
+@Composable
+fun LayoutEmail(
+    email: String,
+    onEmailClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Email, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp),
+            tint = Color(0xFF000000) // Màu của icon
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Email", fontSize = 12.sp, color = Color.Black,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = email,
+                fontSize = 14.sp,
+                color = Color.Black,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Default.Edit, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onEmailClick() },
+            tint = Color(0xFF000000) // Màu của icon
+        )
+    }
+}
+
+@Composable
+fun LayoutSoDienThoai(
+    phoneNumber: String,
+    onphoneNumberClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Phone, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp),
+            tint = Color(0xFF000000) // Màu của icon
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Số điện thoại", fontSize = 12.sp, color = Color.Black,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = phoneNumber,
+                fontSize = 14.sp,
+                color = Color.Black,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Default.Edit, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onphoneNumberClick() },
+            tint = Color(0xFF000000) // Màu của icon
         )
     }
 }
 
 @Composable
 fun LayoutNgaySinh(
-    navController: NavController,
     birthDate: String,
     onNgaySinhClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
-            .clickable { onNgaySinhClick() },
+            .height(60.dp),
+//            .clickable { onNgaySinhClick() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "Ngày sinh", fontSize = 12.sp, color = Color.Black)
-        Text(
-            text = birthDate,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            textAlign = TextAlign.Right,
+        Icon(
+            imageVector = Icons.Outlined.DateRange, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 20.dp)
+                .size(24.dp),
+            tint = Color(0xFF000000) // Màu của icon
         )
-        Image(
-            painter = painterResource(id = R.drawable.right),
-            contentDescription = "Right Arrow",
-            modifier = Modifier.size(24.dp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Ngày sinh", fontSize = 12.sp, color = Color.Black,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = birthDate,
+                fontSize = 14.sp,
+                color = Color.Black,
+
+                )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Default.Edit, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onNgaySinhClick() },
+            tint = Color(0xFF000000) // Màu của icon
         )
     }
 }
@@ -438,25 +820,38 @@ fun LayoutDiaChi(viewModel: LocationViewModel = viewModel()) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showDialog = true }
-            .height(50.dp),
+            .height(60.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Địa chỉ", fontSize = 12.sp, color = Color.Black)
-        Text(
-            text = "$selectedWardName/$selectedDistrictName/$selectedProvinceName ",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            textAlign = TextAlign.Right,
+        Icon(
+            imageVector = Icons.Outlined.LocationOn, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 20.dp)
+                .size(24.dp),
+            tint = Color(0xFF000000) // Màu của icon
         )
-        Image(
-            painter = painterResource(id = R.drawable.right),
-            contentDescription = "Right Arrow",
-            modifier = Modifier.size(24.dp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Địa chỉ", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = "$selectedWardName/$selectedDistrictName/$selectedProvinceName ",
+                fontSize = 14.sp,
+                color = Color.Black,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Default.Edit, // Icon từ bộ Material Icons
+            contentDescription = "Right Arrow Icon",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { showDialog = true },
+            tint = Color(0xFF000000) // Màu của icon
         )
     }
 
@@ -490,7 +885,6 @@ fun DialogDiaChi(viewModel: LocationViewModel, onDismiss: () -> Unit) {
                     text = "Cập nhật địa chỉ",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 // Dropdown cho Tỉnh/Thành phố
@@ -501,7 +895,7 @@ fun DialogDiaChi(viewModel: LocationViewModel, onDismiss: () -> Unit) {
                     onItemSelected = { province ->
                         viewModel.selectProvince(province)  // Truyền đối tượng tỉnh vào viewModel
                     },
-                    itemContent = { province -> Text(text = province.ProvinceName) } // Hiển thị tên tỉnh
+                    itemContent = { province -> Text(text = province.ProvinceName) }, // Hiển thị tên tỉnh
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 // Drop-down menu cho Quận/Huyện
@@ -512,7 +906,7 @@ fun DialogDiaChi(viewModel: LocationViewModel, onDismiss: () -> Unit) {
                     onItemSelected = { district ->
                         viewModel.selectDistrict(district)
                     },
-                    itemContent = { district -> Text(text = district.DistrictName) }
+                    itemContent = { district -> Text(text = district.DistrictName) },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 // Drop-down menu cho Phường/Xã
@@ -523,7 +917,7 @@ fun DialogDiaChi(viewModel: LocationViewModel, onDismiss: () -> Unit) {
                     onItemSelected = { ward ->
                         viewModel.selectWard(ward)
                     },
-                    itemContent = { ward -> Text(text = ward.WardName) }
+                    itemContent = { ward -> Text(text = ward.WardName) },
                 )
             }
         },

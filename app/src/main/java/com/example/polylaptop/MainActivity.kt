@@ -26,8 +26,8 @@ import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
-import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.LocationScreen
+import bottomnavigation.ScreenBottomNavigation.Setting.QuenMatKhauScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
@@ -79,8 +79,8 @@ fun MyApp() {
             DoiMatKhau(navController)
         }
 
-        composable(Screen.DoiMatKhau1.route) {
-            DoiMatKhau1(navController)
+        composable(Screen.QuenMatKhauScreen.route) {
+            QuenMatKhauScreen(navController)
         }
 
         composable(Screen.ThongTinCaNhan.route) {

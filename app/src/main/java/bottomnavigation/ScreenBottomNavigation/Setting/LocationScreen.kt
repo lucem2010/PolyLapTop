@@ -96,7 +96,7 @@ fun <T> DropdownMenuWithSelection(
     selectedItem: String?,
     onItemSelected: (T) -> Unit,
     itemContent: @Composable (T) -> Unit,
-    label: String = "Chọn..."
+    label: String = "Chọn...",
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -104,8 +104,7 @@ fun <T> DropdownMenuWithSelection(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded }
-            .padding(16.dp),
+            .clickable { expanded = !expanded },
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextField(
