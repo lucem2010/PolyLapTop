@@ -1,6 +1,7 @@
 package data
 
 import model.ChiTietSanPham
+import model.HangSP
 import model.SanPham
 import model.SanPhamResponse
 import model.User
@@ -29,6 +30,9 @@ interface ApiService {
 
     @GET("san-pham/")
     suspend fun getSanPham(): Response<SanPhamResponse>  // Trả về SanPhamResponse
+    @GET("hang")
+    suspend fun getHang(): Response<model.Response<HangSP>>  // Trả về SanPhamResponse
+
 
     @GET("chi-tiet-san-pham/{idSanPham}")
     suspend fun getChiTietSanPham(

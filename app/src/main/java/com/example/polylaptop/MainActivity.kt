@@ -5,6 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -25,6 +30,7 @@ import bottomnavigation.ScreenBottomNavigation.CartScreen
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
+import bottomnavigation.ScreenBottomNavigation.SearchScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
@@ -46,7 +52,6 @@ class MainActivity : ComponentActivity() {
 
     }
 }
-
 
 @Composable
 fun MyApp() {
@@ -73,6 +78,15 @@ fun MyApp() {
                 sanPhamJson = sanPhamJson,
                 chiTietSanPhamMapJson = chiTietSanPhamMapJson
             )
+        }
+        composable(
+            Screen.SearchScreen.route,
+            enterTransition = {
+                fadeIn(animationSpec = tween(500)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Up,tween(500)) },
+            exitTransition = {
+                fadeOut(animationSpec = tween(500)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Down,tween(500)) },
+            ) {
+            SearchScreen(navController)
         }
 
         composable(Screen.DoiMatKhau.route) {
