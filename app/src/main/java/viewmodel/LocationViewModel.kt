@@ -3,11 +3,18 @@ package viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+<<<<<<< HEAD
+=======
+import data.GHNService
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import model.District
+<<<<<<< HEAD
 import model.GHNService
+=======
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 import model.Province
 import model.Ward
 
@@ -101,4 +108,9 @@ class LocationViewModel : ViewModel() {
     fun selectWard(ward: Ward) {
         _selectedWardName.value = ward.WardName
     }
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 }

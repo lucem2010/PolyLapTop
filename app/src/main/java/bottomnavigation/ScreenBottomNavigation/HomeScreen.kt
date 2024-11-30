@@ -59,7 +59,13 @@ fun HomeScreen(
     mainNavController: NavController,
     viewModel: SanPhamViewModel = viewModel()
 ) {
+<<<<<<< HEAD
     val ipAddress =  AppConfig.ipAddress
+=======
+
+    val ipAddress = "http://192.168.1.100:5000"
+//    val ipAddress = "http://192.168.16.104:5000"
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
     val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
 

@@ -15,6 +15,10 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+<<<<<<< HEAD
+=======
+import androidx.compose.material.TextField
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Visibility
@@ -33,6 +37,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+<<<<<<< HEAD
+=======
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Rect
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +60,7 @@ import model.EncryptedPrefsManager.getToken
 import model.Screen
 import viewmodel.UserViewModel
 
+<<<<<<< HEAD
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
@@ -92,7 +103,27 @@ fun DoiMatKhau(navController: NavController, viewModel: UserViewModel = viewMode
     var isPasswordVisible by remember { mutableStateOf(false) } // Trạng thái hiển thị mật khẩu
     var isPasswordVisible1 by remember { mutableStateOf(false) } // Trạng thái hiển thị mật khẩu mới
     var isPasswordVisible2 by remember { mutableStateOf(false) } // Trạng thái hiển thị xác nhận mật khẩu mới
+=======
+@SuppressLint("UnrememberedMutableState")
+@Composable
+fun DoiMatKhau(navController: NavController) {
+    var oldPassword by remember { mutableStateOf("") }// Mật khẩu cũ
+    var newPassword by remember { mutableStateOf("") } // Mật khẩu mới
+    var confirmNewPassword by remember { mutableStateOf("") } // Xác nhận mật khẩu mới
+    // Các trạng thái hiển thị lỗi
+    var oldPasswordError by remember { mutableStateOf("") }
+//    var newPasswordError by remember { mutableStateOf("") }
+    var confirmPasswordError by remember { mutableStateOf("") }
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 
+    val isButtonEnabled = derivedStateOf {
+        oldPassword.isNotEmpty() &&
+                newPassword.isNotEmpty() &&
+                confirmNewPassword.isNotEmpty()
+    }
+    var isPasswordVisible by remember { mutableStateOf(false) } // Trạng thái hiển thị mật khẩu
+    var isPasswordVisible1 by remember { mutableStateOf(false) } // Trạng thái hiển thị mật khẩu mới
+    var isPasswordVisible2 by remember { mutableStateOf(false) } // Trạng thái hiển thị xác nhận mật khẩu mới
     Column(
         modifier = Modifier
             .fillMaxSize(),
@@ -138,9 +169,212 @@ fun DoiMatKhau(navController: NavController, viewModel: UserViewModel = viewMode
         Spacer(modifier = Modifier.height(60.dp))
         // Xác nhận mật khẩu hiện tại
         Column(
+<<<<<<< HEAD
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp)
+=======
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp)
+        ) {
+            Text("Xác nhận bằng mật khẩu", fontSize = 16.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = oldPassword,
+                onValueChange = {
+                    oldPassword = it
+                    oldPasswordError = when {
+                        oldPassword.length < 6 || oldPassword.length > 15 -> "Mật khẩu phải có từ 6 đến 15 ký tự"
+                        oldPassword.any { char -> !char.isLetterOrDigit() } -> "Sai mật khẩu"
+                        else -> ""
+                    }
+                },
+                label = { Text("Mật khẩu") },
+                trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        Icon(
+                            imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                isError = oldPasswordError.isNotEmpty()
+            )
+            if (oldPasswordError.isNotEmpty()) {
+                Text(
+                    text = oldPasswordError,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            TextButton(
+                onClick = { navController.navigate(Screen.QuenMatKhauScreen.route) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    "Quên mật khẩu",
+                    fontSize = 16.sp,
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        textDecoration = TextDecoration.Underline // Gạch chân
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Mật khẩu mới
+            Text("Mật khẩu mới", fontSize = 16.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = {
+                    newPassword = it
+                    confirmPasswordError = when {
+                        newPassword.length < 6 || newPassword.length > 15 -> "Mật khẩu phải có từ 6 đến 15 ký tự"
+                        confirmNewPassword != newPassword -> "Mật khẩu không khớp"
+                        else -> ""
+                    }
+                },
+                label = { Text("Mật khẩu mới") },
+                trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible1 = !isPasswordVisible1 }) {
+                        Icon(
+                            imageVector = if (isPasswordVisible1) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (isPasswordVisible1) VisualTransformation.None else PasswordVisualTransformation(),
+            )
+
+            // Xác nhận mật khẩu mới
+            OutlinedTextField(
+                value = confirmNewPassword,
+                onValueChange = {
+                    confirmNewPassword = it
+                    confirmPasswordError = when {
+                        confirmNewPassword != newPassword -> "Mật khẩu không khớp"
+                        confirmNewPassword.length < 6 || confirmNewPassword.length > 15 -> "Mật khẩu phải có từ 6 đến 15 ký tự"
+                        else -> ""
+                    }
+                },
+                label = { Text("Xác nhận mật khẩu mới") },
+                trailingIcon = {
+                    IconButton(onClick = { isPasswordVisible2 = !isPasswordVisible2 }) {
+                        Icon(
+                            imageVector = if (isPasswordVisible2) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (isPasswordVisible2) VisualTransformation.None else PasswordVisualTransformation(),
+                isError = confirmPasswordError.isNotEmpty()
+            )
+            if (confirmPasswordError.isNotEmpty()) {
+                Text(
+                    text = confirmPasswordError,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Button Đổi mật khẩu
+            Button(
+                onClick = { /* Xử lý đổi mật khẩu */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .background(
+                        if (isButtonEnabled.value) Color(0xFFF8774A) else Color(0xFFD9D9D9),
+                        shape = RoundedCornerShape(5.dp)
+                    ),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = if (isButtonEnabled.value) Color(0xFFF8774A) else Color(
+                        0xFFD9D9D9
+                    ),
+                    contentColor = Color.White
+                ),
+                enabled = true // Logic kích hoạt button
+            ) {
+                Text(
+                    "Đổi mật khẩu",
+                    color = if (isButtonEnabled.value) Color.White else Color.Black,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@SuppressLint("UnrememberedMutableState")
+@Composable
+fun ConfirmationBox(navController: NavController) {
+    var passwordValue by remember { mutableStateOf("") }
+    val isButtonEnabled = derivedStateOf { passwordValue.length == 6 }
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 30.dp, end = 30.dp, top = 70.dp)
+            .size(300.dp)
+            .background(Color(0xFFffffff), shape = RoundedCornerShape(8.dp))
+            .border(BorderStroke(1.dp, Color(0xFFD9D9D9)), shape = RoundedCornerShape(5.dp)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Title
+        Text(
+            text = "Xác nhận mật khẩu",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp, top = 20.dp)
+        )
+
+        // Instructions
+        Text(
+            text = "Quý khách vui lòng nhập lại mật khẩu để xác nhận đổi mật khẩu",
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        // PIN Input
+        Box(modifier = Modifier.padding(24.dp)) {
+            PasswordInputField(
+                passLength = 6,
+                onPassChange = { pass ->
+                    passwordValue = pass
+                },
+            )
+        }
+        Button(
+            onClick = {
+
+            },
+            enabled = isButtonEnabled.value,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp)
+                .height(50.dp)
+                .background(
+                    if (isButtonEnabled.value) Color(0xFFF8774A) else Color(0xFFD9D9D9),
+                    shape = RoundedCornerShape(5.dp)
+                ),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = if (isButtonEnabled.value) Color(0xFFF8774A) else Color(0xFFD9D9D9),
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.elevation(0.dp)
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
         ) {
             if (errorMessage.isNotEmpty()) {
                 Text(text = errorMessage, color = Color.Red)
@@ -166,12 +400,42 @@ fun DoiMatKhau(navController: NavController, viewModel: UserViewModel = viewMode
                             contentDescription = null
                         )
                     }
+<<<<<<< HEAD
                 },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 isError = oldPasswordError.isNotEmpty()
             )
             if (oldPasswordError.isNotEmpty()) {
+=======
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardActions = KeyboardActions(onDone = {
+                keyboardController?.hide()
+            })
+        )
+
+        // Eye icon to toggle visibility
+        IconButton(
+            modifier = Modifier
+                .padding(top = 25.dp)
+                .fillMaxWidth(),
+            onClick = { isPasswordVisible = !isPasswordVisible }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically, // Align icon and text vertically
+                horizontalArrangement = Arrangement.spacedBy(4.dp) // Space between icon and text
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (isPasswordVisible) R.drawable.ic_visibility else R.drawable.ic_visibility_off
+                    ),
+                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password"
+                )
+
+                // "Xem mật khẩu" Text label next to the icon
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
                 Text(
                     text = oldPasswordError,
                     color = Color.Red,
@@ -322,4 +586,10 @@ fun DoiMatKhau(navController: NavController, viewModel: UserViewModel = viewMode
 @Preview(showBackground = true)
 fun DoiMatKhauPreview() {
     DoiMatKhau(navController = rememberNavController())
+<<<<<<< HEAD
 }
+=======
+}
+
+
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4

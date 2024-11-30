@@ -55,6 +55,7 @@ import viewmodel.UserViewModel
 @Composable
 fun SettingScreen(
     bottomNavController: NavController,
+<<<<<<< HEAD
     mainNavController: NavController,
     viewModel: UserViewModel = viewModel()
 ) {
@@ -70,10 +71,14 @@ fun SettingScreen(
     val username = loginInfo.username
     val password = loginInfo.password
     val token = loginInfo.token
+=======
+    mainNavController: NavController
+) {
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xffD9D9D9)),
+            .background(Color(0xffffffff)),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -116,7 +121,7 @@ fun SettingScreen(
                 .border(
                     BorderStroke(
                         1.dp,
-                        Color.White.copy(alpha = 0.7f)
+                        Color(0x80AEAEAE).copy(alpha = 0.7f)
                     ), // Viền màu trắng với độ mờ 70%
                     shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
                 ),
@@ -153,7 +158,7 @@ fun SettingScreen(
                 .border(
                     BorderStroke(
                         1.dp,
-                        Color.White.copy(alpha = 0.7f)
+                        Color(0x80AEAEAE).copy(alpha = 0.7f)
                     ), // Viền màu trắng với độ mờ 70%
                     shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
                 ),
@@ -182,7 +187,7 @@ fun SettingScreen(
                 .border(
                     BorderStroke(
                         1.dp,
-                        Color.White.copy(alpha = 0.7f)
+                        Color(0x80AEAEAE).copy(alpha = 0.7f)
                     ), // Viền màu trắng với độ mờ 70%
                     shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
                 ),
@@ -191,7 +196,7 @@ fun SettingScreen(
         ) {
             // Layout Trợ giúp và hỗ trợ
             SettingItem(
-                iconResId = R.drawable.heart3,
+                iconResId = R.drawable.message1,
                 title = "Trợ giúp và hỗ trợ",
                 onClick = {
                     mainNavController.navigate("troGiupVaHoTro")
@@ -213,7 +218,7 @@ fun SettingScreen(
                 .border(
                     BorderStroke(
                         1.dp,
-                        Color.White.copy(alpha = 0.7f)
+                        Color(0x80AEAEAE).copy(alpha = 0.7f)
                     ), // Viền màu trắng với độ mờ 70%
                     shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
                 ),
@@ -254,19 +259,26 @@ fun SettingScreen(
                 .fillMaxWidth()
                 .padding(top = 20.dp, start = 30.dp, end = 30.dp)
                 .clip(RoundedCornerShape(5.dp))
-                .width(400.dp)
-                .border(
-                    BorderStroke(
-                        2.dp,
-                        Color(0xff9C7056).copy(alpha = 0.7f)
-                    ), // Viền màu trắng với độ mờ 70%
-                    shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
-                ),
+                .width(400.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+<<<<<<< HEAD
             if (token != null) {
                 Row(
+=======
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(Color(0xFFF8774A))
+                    .padding(start = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logout2),
+                    contentDescription = "Logout Icon",
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
@@ -385,8 +397,11 @@ fun DividerLine() {
     )
 }
 
-//@Composable
-//@Preview(showBackground = true)
-//fun SettingScreenPreview() {
-//    SettingScreen(mainNavController = rememberNavController())
-//}
+@Composable
+@Preview(showBackground = true)
+fun SettingScreenPreview() {
+    SettingScreen(
+        mainNavController = rememberNavController(),
+        bottomNavController = rememberNavController()
+    )
+}

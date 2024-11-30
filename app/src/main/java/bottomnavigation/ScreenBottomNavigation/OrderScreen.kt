@@ -28,6 +28,8 @@ import androidx.compose.material.Button
 import androidx.compose.material.Surface
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -62,33 +64,25 @@ fun OrderScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFD9D9D9)),
+            .background(Color(0xFFffffff)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .padding(top = 20.dp, start = 20.dp, end = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .height(70.dp)
+                .padding(top = 30.dp, start = 20.dp, end = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-//            Image(
-//                painter = painterResource(id = R.drawable.left),
-//                contentDescription = "Back",
-//                modifier = Modifier
-//                    .size(24.dp)
-//                    .clickable {
-//                        navController.popBackStack()
-//                    }
-//            )
 
             Text(
                 text = "Thông báo",
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp),
-                fontSize = 16.sp,
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
                 textAlign = TextAlign.Center
@@ -142,45 +136,37 @@ fun OrderScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(8.dp))
+                .padding(start = 20.dp, end = 20.dp)
         ) {
-            // Date TextField
-            Row(
+            TextField(
+                value = date.value,
+                onValueChange = { newValue -> date.value = newValue },
                 modifier = Modifier
-                    .padding(start = 30.dp, end = 30.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(8.dp)),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .fillMaxWidth()
+                    .border(1.dp, Color.Black, RoundedCornerShape(5.dp)),
+                textStyle = TextStyle(fontSize = 16.sp),
+                colors = TextFieldDefaults.textFieldColors(
+                    backgroundColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                singleLine = true
+            )
+            IconButton(
+                onClick = { datePickerDialog.show() },
+                modifier = Modifier
+                    .size(30.dp)
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 8.dp)
             ) {
-                TextField(
-                    value = date.value,
-                    onValueChange = { newValue -> date.value = newValue },
-                    textStyle = TextStyle(fontSize = 16.sp),
-                    modifier = Modifier.weight(1f),
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    singleLine = true
+                Icon(
+                    painter = painterResource(id = R.drawable.calendar),
+                    contentDescription = "Calendar",
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.Black
                 )
-                // Calendar Icon Button
-                IconButton(
-                    onClick = { datePickerDialog.show() },
-                    modifier = Modifier
-                        .size(30.dp)
-                        .align(Alignment.CenterVertically)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.calendar),
-                        contentDescription = "Calendar",
-                        modifier = Modifier
-                            .size(30.dp)
-                            .padding(end = 8.dp),
-                        tint = Color.Black
-                    )
-
-                }
             }
-
         }
         Spacer(modifier = Modifier.height(20.dp))
         var selectedProduct by remember { mutableStateOf<Product?>(null) }
@@ -188,10 +174,10 @@ fun OrderScreen(navController: NavController) {
 
         // Dữ liệu sản phẩm
         val products = listOf(
-            Product("Laptop Dell", "Core i7", 1, R.drawable.pro1, OrderStatus.PROCESSING),
-            Product("MacBook Pro", "M1 Chip", 1, R.drawable.pro2, OrderStatus.SHIPPING),
-            Product("Asus Zenbook", "Core i5", 2, R.drawable.pro3, OrderStatus.COMPLETED),
-            Product("HP Spectre", "Core i7", 1, R.drawable.pro4, OrderStatus.COMPLETED)
+            Product("Laptop Dell", "Core i7", 1, R.drawable.welcome4, OrderStatus.PROCESSING),
+            Product("MacBook Pro", "M1 Chip", 1, R.drawable.welcome3, OrderStatus.SHIPPING),
+            Product("Asus Zenbook", "Core i5", 2, R.drawable.welcome1, OrderStatus.COMPLETED),
+            Product("HP Spectre", "Core i7", 1, R.drawable.welcome2, OrderStatus.COMPLETED)
         )
 
         // Danh sách sản phẩm
@@ -204,6 +190,7 @@ fun OrderScreen(navController: NavController) {
                 OrderConfirmationItem(product) {
                     selectedProduct = product
                     showDialog = true
+
                 }
                 Spacer(modifier = Modifier.height(8.dp)) // Thêm khoảng cách giữa các sản phẩm
             }
@@ -226,18 +213,30 @@ fun OrderConfirmationItem(product: Product, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .clickable { onClick() } // Thêm sự kiện nhấp vào
+            .clickable { onClick() }, // Thêm sự kiện nhấp vào
+        verticalAlignment = Alignment.CenterVertically
     ) {
         // Hình ảnh sản phẩm
-        Image(
-            painter = painterResource(id = product.imageRes),
-            contentDescription = "${product.name} Image",
+        Box(
             modifier = Modifier
-                .size(60.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .align(Alignment.CenterVertically),
-            contentScale = ContentScale.Crop
-        )
+                .clip(RoundedCornerShape(8.dp)) // Bo góc cho Box
+                .border(
+                    width = 2.dp,
+                    color = Color.White,
+                    shape = RoundedCornerShape(8.dp) // Đường viền bo góc
+                )
+        ) {
+            Image(
+                painter = painterResource(id = product.imageRes),
+                contentDescription = "${product.name} Image",
+                modifier = Modifier
+                    .background(Color(0xF3E7E5E5))
+                    .padding(8.dp)
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -279,59 +278,6 @@ fun OrderConfirmationItem(product: Product, onClick: () -> Unit) {
 
 @Composable
 fun ProductDetailDialog(product: Product, onDismiss: () -> Unit) {
-//    AlertDialog(
-//        onDismissRequest = onDismiss,
-//        text = {
-//            Column(
-//            ) {
-//                Image(
-//                    painter = painterResource(id = product.imageRes),
-//                    contentDescription = null,
-//                    modifier = Modifier.size(100.dp)
-//                )
-//                Text(text = "${product.name}")
-//                Text(text = "Giá: ${product.quantity} sản phẩm")
-//                Text(
-//                    text = "Trạng thái: ${
-//                        when (product.status) {
-//                            OrderStatus.PROCESSING -> "Đang xử lý"
-//                            OrderStatus.SHIPPING -> "Đang giao hàng"
-//                            OrderStatus.COMPLETED -> "Đặt hàng thành công"
-//                        }
-//                    }"
-//                )
-//                Text(text = "Mô tả: ${product.description}")
-//            }
-//        },
-//        confirmButton = {
-//            Box(
-//                modifier = Modifier
-//                    .background(
-//                        color = Color(0xFF809C7056), // Solid color
-//                        shape = RoundedCornerShape(5.dp) // Rounded corners
-//                    )
-//                    .border(
-//                        border = BorderStroke(2.dp, Color(0xFF9C7056)), // Stroke color
-//                        shape = RoundedCornerShape(5.dp) // Same shape as background
-//                    )
-//                    .clickable(
-//                        onClick = onDismiss
-//                    )
-//                    .padding(horizontal = 16.dp, vertical = 8.dp) // Padding inside the button
-//            ) {
-//                Text(
-//                    text = "Đóng",
-//                    color = Color.White, // Text color
-//                    fontWeight = FontWeight.Bold, // Text style
-//                    style = TextStyle(fontSize = 13.sp), // Text size
-//                    textAlign = TextAlign.Center // Center text
-//                )
-//            }
-//        },
-//        modifier = Modifier
-//            .width(300.dp)
-//            .height(300.dp),
-//    )
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
@@ -397,28 +343,28 @@ fun ProductDetailDialog(product: Product, onDismiss: () -> Unit) {
 
                 // Close button
                 Box(
-                modifier = Modifier
-                    .background(
-                        color = Color(0xFF809C7056), // Solid color
-                        shape = RoundedCornerShape(5.dp) // Rounded corners
+                    modifier = Modifier
+                        .background(
+                            color = Color(0xFF809C7056), // Solid color
+                            shape = RoundedCornerShape(5.dp) // Rounded corners
+                        )
+                        .border(
+                            border = BorderStroke(2.dp, Color(0xFF9C7056)), // Stroke color
+                            shape = RoundedCornerShape(5.dp) // Same shape as background
+                        )
+                        .clickable(
+                            onClick = onDismiss
+                        )
+                        .padding(horizontal = 16.dp, vertical = 8.dp) // Padding inside the button
+                ) {
+                    Text(
+                        text = "Đóng",
+                        color = Color.White, // Text color
+                        fontWeight = FontWeight.Bold, // Text style
+                        style = TextStyle(fontSize = 13.sp), // Text size
+                        textAlign = TextAlign.Center // Center text
                     )
-                    .border(
-                        border = BorderStroke(2.dp, Color(0xFF9C7056)), // Stroke color
-                        shape = RoundedCornerShape(5.dp) // Same shape as background
-                    )
-                    .clickable(
-                        onClick = onDismiss
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp) // Padding inside the button
-            ) {
-                Text(
-                    text = "Đóng",
-                    color = Color.White, // Text color
-                    fontWeight = FontWeight.Bold, // Text style
-                    style = TextStyle(fontSize = 13.sp), // Text size
-                    textAlign = TextAlign.Center // Center text
-                )
-            }
+                }
             }
         }
     }

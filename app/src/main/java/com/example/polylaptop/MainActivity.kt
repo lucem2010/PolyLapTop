@@ -29,8 +29,14 @@ import bottomnavigation.ScreenBottomNavigation.CartScreen
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
+<<<<<<< HEAD
 import bottomnavigation.ScreenBottomNavigation.SearchScreen
 
+=======
+import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
+import bottomnavigation.ScreenBottomNavigation.Setting.LocationScreen
+import bottomnavigation.ScreenBottomNavigation.Setting.QuenMatKhauScreen
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
@@ -38,7 +44,11 @@ import model.Screen
 import view.AuthScreen
 import view.OrderDetailsScreen
 import view.WelcomeScreen
+<<<<<<< HEAD
 import java.net.URLDecoder
+=======
+import viewmodel.LocationViewModel
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,12 +99,25 @@ fun MyApp() {
             )
         }
 
+<<<<<<< HEAD
 
 
+=======
+        composable(Screen.QuenMatKhauScreen.route) {
+            QuenMatKhauScreen(navController)
+        }
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 
         composable(Screen.ThongTinCaNhan.route) {
             ThongTinCaNhan(navController)
         }
+<<<<<<< HEAD
+=======
+        composable(Screen.LocationScreen.route){
+            LocationScreen(viewModel = LocationViewModel())
+        }
+
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
 
         // Điều hướng Bottom Navigation với Scaffold và navController mới
         composable(Screen.BottomNav.route) {

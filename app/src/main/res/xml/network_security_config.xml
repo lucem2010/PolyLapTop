@@ -2,6 +2,10 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <!-- Thay thế 192.168.16.104 bằng địa chỉ IP của bạn -->
+<<<<<<< HEAD
         <domain includeSubdomains="true">192.168.100.71</domain>
+=======
+        <domain includeSubdomains="true">192.168.1.100</domain>
+>>>>>>> eba0876dece6d080d289b6006a0ebc6add4629c4
     </domain-config>
 </network-security-config>

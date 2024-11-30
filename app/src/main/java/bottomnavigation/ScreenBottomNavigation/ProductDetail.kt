@@ -73,6 +73,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
 import com.google.gson.Gson
@@ -179,7 +180,7 @@ fun ProductDetail(   navController: NavController,
 
 
 
-
+    val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
 
     val reviewData = listOf(
         Review(
@@ -249,20 +250,14 @@ fun ProductDetail(   navController: NavController,
                     color = Color.Black,
                     textAlign = TextAlign.Center
                 )
-                IconButton(
-                    onClick = {},
+                AsyncImage(
+                    model = imgLogo,
+                    contentDescription = "Logo",
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.LightGray)
-                        .size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = "favorite",
-                        tint = Color.Black,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                        .size(50.dp), // Set size of the image
+                    contentScale = ContentScale.Fit // Scale the image to fit within the size
+                )
+
             }
         }
 
@@ -364,36 +359,7 @@ fun ProductDetail(   navController: NavController,
                 )
             }
         }
-        // Reviews Section
-        item {
-            Row(
-                modifier = Modifier
-                    .padding(top = 10.dp, end = 20.dp, start = 20.dp, bottom = 30.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                //Tao chu nghieng va gach chan
-                Text(
-                    text = buildAnnotatedString {
-                        val text = "(${reviewData.size}+ Reviews)"
-                        append(text)
-                        addStyle(
-                            style = SpanStyle(textDecoration = TextDecoration.Underline),
-                            start = 0,
-                            end = text.length
-                        )
-                    },
-                    fontSize = 16.sp,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.clickable {
-                        isReviewDropdownVisible = !isReviewDropdownVisible
-                    }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                AverageRatingRow(reviewData = reviewData)
-            }
-        }
+
 
 
         // Dropdown cho thông số sản phẩm
@@ -447,11 +413,7 @@ fun ProductDetail(   navController: NavController,
                     .fillMaxHeight() // Áp dụng fillMaxHeight cho phần mô tả để không bị thiếu chữ
             )
         }
-        if (isReviewDropdownVisible) {
-            items(reviewData) { review ->
-                ReviewItem(review)
-            }
-        }
+
         // Nút thêm vào giỏ hàng
         item {
             Row(
@@ -518,7 +480,42 @@ fun ProductDetail(   navController: NavController,
 
             }
         }
+        // Reviews Section
+        item {
+            Row(
+                modifier = Modifier
+                    .padding(top = 10.dp, end = 20.dp, start = 20.dp, bottom = 30.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                //Tao chu nghieng va gach chan
+                AverageRatingRow(reviewData = reviewData)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        val text = "(${reviewData.size}+ Reviews)"
+                        append(text)
+                        addStyle(
+                            style = SpanStyle(textDecoration = TextDecoration.Underline),
+                            start = 0,
+                            end = text.length
+                        )
+                    },
+                    fontSize = 16.sp,
+                    fontStyle = FontStyle.Italic,
+                    modifier = Modifier.clickable {
+                        isReviewDropdownVisible = !isReviewDropdownVisible
+                    }
+                )
 
+            }
+        }
+        if (isReviewDropdownVisible) {
+            items(reviewData) { review ->
+                ReviewItem(review)
+            }
+        }
 
     }
 }
