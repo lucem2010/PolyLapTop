@@ -1,9 +1,13 @@
 package viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.ApiService
 import data.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -42,7 +46,12 @@ class UserViewModel : ViewModel() {
         }
     }
 
-    fun loginUser(username: String, password: String, onSuccess: (String, String, String, String) -> Unit, onError: (String) -> Unit) {
+    fun loginUser(
+        username: String,
+        password: String,
+        onSuccess: (String, String, String, String) -> Unit,
+        onError: (String) -> Unit
+    ) {
         viewModelScope.launch {
             try {
                 // Tạo đối tượng User
@@ -71,5 +80,75 @@ class UserViewModel : ViewModel() {
                 onError("Lỗi kết nối. Vui lòng thử lại!")
             }
         }
+    }
+
+
+    fun logoutUser(
+        token: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                // Gọi API logout với token của người dùng
+                val response = RetrofitClient.apiService.logout("Bearer $token")
+
+                if (response.isSuccessful) {
+                    // Xử lý khi logout thành công
+                    onSuccess("Đăng xuất thành công!")
+                } else {
+                    // Xử lý khi logout thất bại
+                    onError("Lỗi: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e("LogoutError", "Exception: ${e.message}")
+                onError("Lỗi kết nối. Vui lòng thử lại!")
+            }
+        }
+    }
+
+
+    private val _changePasswordResponse = MutableLiveData<ApiService.ApiResponse>()
+    val changePasswordResponse: LiveData<ApiService.ApiResponse> get() = _changePasswordResponse
+    private val _error = MutableLiveData<String>()
+    val error: LiveData<String> get() = _error
+
+    fun changePassword(
+        token: String,
+        oldPassword: String,
+        newPassword: String,
+    ) {
+        viewModelScope.launch {
+            try {
+                // Tạo request body
+                val request = ApiService.ChangePasswordRequest(oldPassword, newPassword)
+
+                // Gọi API thông qua repository
+                val response = RetrofitClient.apiService.changePassword(token, request)
+
+                if (response.isSuccessful) {
+                    // Xử lý khi API trả về thành công
+                    _changePasswordResponse.postValue(response.body())
+                } else {
+                    // Xử lý lỗi từ server
+                    val errorMessage = response.errorBody()?.string() ?: "Unknown error"
+                    _error.postValue("Failed: $errorMessage")
+                }
+            } catch (e: Exception) {
+                // Xử lý lỗi ngoại lệ (network hoặc logic)
+                _error.postValue("Exception: ${e.message}")
+            }
+
+        }
+    }
+
+    @SuppressLint("NullSafeMutableLiveData")
+    fun resetChangePasswordState() {
+        _changePasswordResponse.postValue(null)
+    }
+
+    @SuppressLint("NullSafeMutableLiveData")
+    fun resetErrorState() {
+        _error.postValue(null)
     }
 }

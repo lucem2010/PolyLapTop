@@ -5,6 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -25,16 +29,16 @@ import bottomnavigation.ScreenBottomNavigation.CartScreen
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
-import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
-import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
+import bottomnavigation.ScreenBottomNavigation.SearchScreen
+
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan1
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan2
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import com.example.polylaptop.ui.theme.PolyLapTopTheme
 import model.Screen
 import view.AuthScreen
+import view.OrderDetailsScreen
 import view.WelcomeScreen
+import java.net.URLDecoder
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,40 +63,37 @@ fun MyApp() {
             })
         }
         composable(
-            route = Screen.ProductDetail.route+"/{sanPhamJson}/{chiTietSanPhamMapJson}",
+            route = Screen.ProductDetail.route + "/{chiTietSanPhamJson}",
             arguments = listOf(
-                navArgument("sanPhamJson") { type = NavType.StringType },
-                navArgument("chiTietSanPhamMapJson") { type = NavType.StringType }
+                navArgument("chiTietSanPhamJson") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val sanPhamJson = backStackEntry.arguments?.getString("sanPhamJson")
-            val chiTietSanPhamMapJson = backStackEntry.arguments?.getString("chiTietSanPhamMapJson")
+            val chiTietSanPhamJson = backStackEntry.arguments?.getString("chiTietSanPhamJson")
 
+            // Truyền tham số chiTietSanPhamJson vào ProductDetail
             ProductDetail(
                 navController = navController,
-                sanPhamJson = sanPhamJson,
-                chiTietSanPhamMapJson = chiTietSanPhamMapJson
+                chiTietSanPhamJson = chiTietSanPhamJson
             )
         }
 
-        composable(Screen.DoiMatKhau.route) {
-            DoiMatKhau(navController)
+        composable(
+            route = Screen.OrderDetailsScreen.route + "/{chiTietSanPhamJson}",
+            arguments = listOf(navArgument("chiTietSanPhamJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedJson = backStackEntry.arguments?.getString("chiTietSanPhamJson")
+            val decodedJson = encodedJson?.let { URLDecoder.decode(it, "UTF-8") } // Giải mã chuỗi JSON
+            OrderDetailsScreen(
+                navController = navController,
+                chiTietSanPhamJson = decodedJson
+            )
         }
 
-        composable(Screen.DoiMatKhau1.route) {
-            DoiMatKhau1(navController)
-        }
+
+
 
         composable(Screen.ThongTinCaNhan.route) {
             ThongTinCaNhan(navController)
-        }
-
-        composable(Screen.ThongTinCaNhan1.route) {
-            ThongTinCaNhan1(navController)
-        }
-
-        composable(Screen.ThongTinCaNhan2.route) {
-            ThongTinCaNhan2(navController)
         }
 
         // Điều hướng Bottom Navigation với Scaffold và navController mới
@@ -113,7 +114,8 @@ fun MyApp() {
                             mainNavController = navController
                         )
                     }
-                    composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController) }
+                    composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
+                        mainNavController = navController) }
                     composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController) }
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(
@@ -123,6 +125,17 @@ fun MyApp() {
                     }
                 }
             }
+        }
+
+
+        composable(
+            Screen.SearchScreen.route,
+            enterTransition = {
+                fadeIn(animationSpec = tween(500)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Up,tween(500)) },
+            exitTransition = {
+                fadeOut(animationSpec = tween(500)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Down,tween(500)) },
+        ) {
+            SearchScreen(navController)
         }
 
         // Màn hình Đăng nhập/Đăng ký

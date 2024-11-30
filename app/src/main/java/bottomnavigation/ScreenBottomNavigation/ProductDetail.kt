@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,7 +47,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,58 +69,79 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
+import com.google.gson.Gson
 import kotlinx.serialization.json.Json
+import model.AppConfig
 import model.ChiTietSanPham
 import model.EncryptedPrefsManager
+import model.HangSP
 import model.Review
 import model.SanPham
+import model.Screen
 import model.imagesItem
+import view.OrderDetailsScreen
 import view.alert_dialog.CartIconWithLoginCheck
+import viewmodel.CartViewModel
+import viewmodel.SanPhamViewModel
 import java.net.URLDecoder
+import java.net.URLEncoder
 
 
 @Composable
 fun ProductDetail(   navController: NavController,
-                     sanPhamJson: String?,
-                     chiTietSanPhamMapJson: String?) {
+                     chiTietSanPhamJson: String?,
+                     cartViewModel: CartViewModel= viewModel(),
+                     sanPhamViewModel: SanPhamViewModel= viewModel()
+                     ) {
 
 
 
     var isReviewDropdownVisible by remember { mutableStateOf(false) }
 
-    // Giải mã chuỗi JSON trước khi decode thành đối tượng
-    val sanPham = sanPhamJson?.let {
+    // Giải mã và chuyển đổi chuỗi JSON thành đối tượng `ChiTietSanPham`
+    val chiTietSanPham = chiTietSanPhamJson?.let {
         val decodedJson = URLDecoder.decode(it, "UTF-8")
-        Log.d("ProductDetail", "Decoded sanPhamJson: $decodedJson") // Log JSON sau khi decode
+        Log.d("ProductDetail", "Decoded chiTietSanPhamJson: $decodedJson") // Log JSON sau khi decode
         try {
-            val sanPhamObj = Json.decodeFromString<SanPham>(decodedJson)
-            Log.d("ProductDetail", "SanPham decoded successfully: $sanPhamObj")
-            sanPhamObj
+            val chiTiet = Json.decodeFromString<ChiTietSanPham>(decodedJson)
+            Log.d("ProductDetail", "ChiTietSanPham decoded successfully: $chiTiet") // Log đối tượng ChiTietSanPham
+            chiTiet
         } catch (e: Exception) {
-            Log.e("ProductDetail", "Error decoding SanPham: ${e.message}", e)
+            Log.e("ProductDetail", "Error decoding ChiTietSanPham: ${e.message}", e)
             null
         }
     }
 
-    val chiTietSanPhamList = chiTietSanPhamMapJson?.let {
-        val decodedJson = URLDecoder.decode(it, "UTF-8")
-        Log.d("ProductDetail", "Decoded chiTietSanPhamMapJson: $decodedJson") // Log JSON sau khi decode
-        try {
-            val chiTietList = Json.decodeFromString<List<ChiTietSanPham>>(decodedJson)
-            Log.d("ProductDetail", "ChiTietSanPhamList decoded successfully: $chiTietList")
-            chiTietList
-        } catch (e: Exception) {
-            Log.e("ProductDetail", "Error decoding ChiTietSanPhamList: ${e.message}", e)
-            null
+
+    val chiTietSanPhamList by sanPhamViewModel.chiTietSanPhamList.observeAsState(emptyList())
+
+    if (chiTietSanPham != null) {
+        LaunchedEffect(chiTietSanPham.idSanPham._id) {
+            sanPhamViewModel.fetchChiTietSanPhamOfid(chiTietSanPham.idSanPham._id)
         }
     }
+
+    val sanPham = chiTietSanPham?.idSanPham?.let {
+        SanPham(
+            _id = it._id,
+            idHangSP = HangSP(
+                _id = it.idHangSP._id,
+                TenHang = it.idHangSP.TenHang
+            ),
+            tenSP = it.tenSP,
+            anhSP = it.anhSP
+        )
+    }
+
 
     // Sử dụng ảnh đầu tiên làm ảnh chính, nếu có
-    val ipAddress = "http://192.168.16.104:5000"
+    val ipAddress =  AppConfig.ipAddress
 
 // Sử dụng ảnh đầu tiên làm ảnh chính, nếu có
     val selectedImage = remember {
@@ -140,6 +164,8 @@ fun ProductDetail(   navController: NavController,
     val manHinhOptions = chiTietSanPhamList?.map { it.ManHinh }?.distinct() ?: emptyList()
     val mauSacOptions = chiTietSanPhamList?.map { it.MauSac }?.distinct() ?: emptyList()
 
+    var chiTietSanPhamMap by remember { mutableStateOf<Map<String, Pair<Double, ChiTietSanPham>>>(emptyMap()) }
+    var showOrderDetails by remember { mutableStateOf(false) }
     // Hàm để lọc chi tiết sản phẩm
     val filteredProducts = chiTietSanPhamList?.filter {
         (selectedRam == null || it.Ram == selectedRam) &&
@@ -148,8 +174,8 @@ fun ProductDetail(   navController: NavController,
                 (selectedMauSac == null || it.MauSac == selectedMauSac)
     }
 
-    // Kiểm tra nếu có sản phẩm phù hợp
-    val selectedProduct = filteredProducts?.firstOrNull()
+// Kiểm tra nếu có sản phẩm phù hợp
+    val selectedProduct = filteredProducts?.firstOrNull { it._id == chiTietSanPham?._id }
 
 
 
@@ -182,12 +208,15 @@ fun ProductDetail(   navController: NavController,
         ),
 
     )
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xffffffff)),
         contentPadding = PaddingValues(bottom = 30.dp)
     ) {
+
         // Header
         item {
             Row(
@@ -290,7 +319,9 @@ fun ProductDetail(   navController: NavController,
                                         .border(
                                             BorderStroke(
                                                 2.dp,
-                                                if (selectedImage.value == imageUrl) Color(0x809C7056) else Color(0xB3FFFFFF)
+                                                if (selectedImage.value == imageUrl) Color(
+                                                    0x809C7056
+                                                ) else Color(0xB3FFFFFF)
                                             ),
                                             shape = RoundedCornerShape(5.dp)
                                         ),
@@ -430,7 +461,35 @@ fun ProductDetail(   navController: NavController,
             ) {
                 // Nút "Mua ngay"
                 Button(
-                    onClick = {},
+                    onClick = {
+                        // Log trước khi thực hiện các bước
+                        Log.d("ButtonClick", "Button clicked. Checking selectedProduct.")
+
+                        // Nếu tìm thấy sản phẩm, tạo Map và lưu vào trạng thái
+                        if (selectedProduct != null) {
+                            Log.d("ButtonClick", "Selected product is not null. Proceeding to create Map.")
+
+                            chiTietSanPhamMap = mapOf(
+                                selectedProduct!!._id to Pair(
+                                    1.0, // Số lượng mặc định
+                                    selectedProduct!!
+                                )
+                            )
+                            Log.d("ButtonClick", "Map created: $chiTietSanPhamMap")
+
+                            // Chuyển qua màn OrderDetailsScreen và truyền dữ liệu
+                            try {
+                                val jsonMap = Gson().toJson(chiTietSanPhamMap) // Convert Map to JSON
+                                val encodedJson = URLEncoder.encode(jsonMap, "UTF-8") // Mã hóa chuỗi JSON
+                                Log.d("ButtonClick", "Navigating with JSON: $encodedJson")
+                                navController.navigate(Screen.OrderDetailsScreen.route + "/$encodedJson")
+                            } catch (e: Exception) {
+                                Log.e("ButtonClick", "Error encoding JSON or navigating: ${e.message}")
+                            }
+                        } else {
+                            Log.d("ButtonClick", "Selected product is null.")
+                        }
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 20.dp)
@@ -452,7 +511,8 @@ fun ProductDetail(   navController: NavController,
 
                     CartIconWithLoginCheck(
                         navController = navController,
-                        selectedProduct = selectedProduct
+                        selectedProduct = selectedProduct,
+                        cartViewModel
                     )
 
 
