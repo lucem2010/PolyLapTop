@@ -1,6 +1,7 @@
 package com.example.polylaptop
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -34,27 +36,28 @@ import bottomnavigation.ScreenBottomNavigation.SearchScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan1
-import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan2
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
-import com.example.polylaptop.ui.theme.PolyLapTopTheme
 import model.Screen
 import view.AuthScreen
+import view.OrderDetailsScreen
 import view.WelcomeScreen
+import viewmodel.UserViewModel
+import java.net.URLDecoder
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApp()
+            val userViewModel: UserViewModel = viewModel()
+            MyApp(userViewModel) // Truyền ViewModel vào MyApp
         }
 
     }
 }
 
 @Composable
-fun MyApp() {
+fun MyApp(viewModel: UserViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         // Màn hình chào mừng
@@ -63,22 +66,39 @@ fun MyApp() {
                 navController.navigate(Screen.BottomNav.route)
             })
         }
+
         composable(
-            route = Screen.ProductDetail.route+"/{sanPhamJson}/{chiTietSanPhamMapJson}",
+            route = Screen.ProductDetail.route + "/{chiTietSanPhamJson}",
             arguments = listOf(
-                navArgument("sanPhamJson") { type = NavType.StringType },
-                navArgument("chiTietSanPhamMapJson") { type = NavType.StringType }
+                navArgument("chiTietSanPhamJson") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val sanPhamJson = backStackEntry.arguments?.getString("sanPhamJson")
-            val chiTietSanPhamMapJson = backStackEntry.arguments?.getString("chiTietSanPhamMapJson")
+            val chiTietSanPhamJson = backStackEntry.arguments?.getString("chiTietSanPhamJson")
 
+            // Truyền tham số chiTietSanPhamJson vào ProductDetail
             ProductDetail(
                 navController = navController,
-                sanPhamJson = sanPhamJson,
-                chiTietSanPhamMapJson = chiTietSanPhamMapJson
+                chiTietSanPhamJson = chiTietSanPhamJson
             )
         }
+        composable(
+            route = Screen.OrderDetailsScreen.route + "/{chiTietSanPhamJson}",
+            arguments = listOf(navArgument("chiTietSanPhamJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedJson = backStackEntry.arguments?.getString("chiTietSanPhamJson")
+            val decodedJson = try {
+                encodedJson?.let { URLDecoder.decode(it, "UTF-8") }
+            } catch (e: Exception) {
+                Log.e("OrderDetailsScreen", "Error decoding JSON: ${e.message}")
+                null
+            }
+
+            OrderDetailsScreen(
+                navController = navController,
+                chiTietSanPhamJson = decodedJson
+            )
+        }
+
         composable(
             Screen.SearchScreen.route,
             enterTransition = {
@@ -98,16 +118,10 @@ fun MyApp() {
         }
 
         composable(Screen.ThongTinCaNhan.route) {
-            ThongTinCaNhan(navController)
+            ThongTinCaNhan(navController,viewModel)
         }
 
-        composable(Screen.ThongTinCaNhan1.route) {
-            ThongTinCaNhan1(navController)
-        }
 
-        composable(Screen.ThongTinCaNhan2.route) {
-            ThongTinCaNhan2(navController)
-        }
 
         // Điều hướng Bottom Navigation với Scaffold và navController mới
         composable(Screen.BottomNav.route) {
@@ -127,7 +141,8 @@ fun MyApp() {
                             mainNavController = navController
                         )
                     }
-                    composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController) }
+                    composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
+                        mainNavController = navController) }
                     composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController) }
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(

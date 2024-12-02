@@ -1,10 +1,11 @@
 package data
 
+import model.AppConfig
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "http://192.168.82.14:5000/"
+    private const val BASE_URL = AppConfig.ipAddress
 
     fun getBaseUrl(): String {
         return BASE_URL

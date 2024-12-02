@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -31,6 +32,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -45,7 +47,9 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.polylaptop.R
 import kotlinx.coroutines.delay
+import model.AppConfig
 import model.ChiTietSanPham
+import model.EncryptedPrefsManager
 import model.SanPham
 import model.Screen
 import model.toJson
@@ -58,7 +62,7 @@ fun HomeScreen(
     mainNavController: NavController,
     viewModel: SanPhamViewModel = viewModel()
 ) {
-    val ipAddress = "http://192.168.82.14:5000"
+    val ipAddress = AppConfig.ipAddress
     val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
 
@@ -70,7 +74,6 @@ fun HomeScreen(
 
     var currentImageIndex by remember { mutableStateOf(0) }
     val sanPhamList by viewModel.sanPhamList.observeAsState(emptyList())
-    val chiTietSanPhamMap by viewModel.chiTietSanPhamMap.observeAsState(emptyMap())
     var isRedAndVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
@@ -82,6 +85,7 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.fetchSanPham()
+
     }
     LaunchedEffect(Unit) {
         while (true) {
@@ -89,6 +93,12 @@ fun HomeScreen(
             currentImageIndex = (currentImageIndex + 1) % bannerList.size
         }
     }
+
+    val context = LocalContext.current
+    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
+
+// Truy xuất các thuộc tính từ đối tượng `LoginInfo`
+    val token = loginInfo.token
 
     Box(
         modifier = Modifier
@@ -101,7 +111,7 @@ fun HomeScreen(
         ) {
             // Header (Logo, tiêu đề, nút đăng nhập)
             item {
-                HeaderSection(imgLogo, mainNavController)
+                HeaderSection(imgLogo, mainNavController,token)
             }
 
             // Banner
@@ -112,7 +122,9 @@ fun HomeScreen(
 
             // Sticky Header: Search bar
             stickyHeader {
-                SearchBar(navController = mainNavController, searchText = searchText) { searchText = it }
+                SearchBar(navController = mainNavController, searchText = searchText) {
+                    searchText = it
+                }
             }
 
             // Animated Divider
@@ -126,19 +138,19 @@ fun HomeScreen(
 
             // "Mới nhất" Section
             item {
-                SectionTitle("Mới nhất",Color(0xFFFFA500))
+                SectionTitle("Mới nhất", Color(0xFFFFA500))
             }
             item {
                 LazyRow(
-                    modifier = Modifier.padding(start = 8.dp, end = 8.dp,bottom = 16.dp),
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(sanPhamList) { sanPham ->
                         NewProductItem(
                             navController = mainNavController,
                             sanPham = sanPham,
-                            chiTietSanPhamMap = chiTietSanPhamMap,
-                            ipAddress = ipAddress
+                            ipAddress = ipAddress,
+                            viewModel
                         )
                     }
                 }
@@ -153,7 +165,7 @@ fun HomeScreen(
 
             // "Phổ biến" Section
             item {
-                SectionTitle("Phổ biến",Color.Black)
+                SectionTitle("Phổ biến", Color.Black)
             }
             // Chuyển LazyVerticalGrid thành một mục của LazyColumn
             items(sanPhamList.chunked(2)) { rowItems ->
@@ -167,7 +179,7 @@ fun HomeScreen(
                         ProductItem(
                             navController = mainNavController,
                             sanPham = sanPham,
-                            chiTietSanPhamMap = chiTietSanPhamMap,
+                            viewModel,
                             ipAddress = ipAddress
                         )
                     }
@@ -178,7 +190,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun HeaderSection(imgLogo: String, mainNavController: NavController) {
+fun HeaderSection(imgLogo: String, mainNavController: NavController, token: Any?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -186,35 +198,50 @@ fun HeaderSection(imgLogo: String, mainNavController: NavController) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Hiển thị logo
         AsyncImage(
             model = imgLogo,
             contentDescription = "Logo",
             modifier = Modifier.size(50.dp),
             contentScale = ContentScale.Fit
         )
+
+        // Hiển thị tiêu đề
         Text(
             text = "Poly Laptop",
             fontSize = 25.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
-        Button(
-            onClick = { mainNavController.navigate(Screen.Auth.route) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            modifier = Modifier
-                .height(35.dp)
-                .clip(RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Text(
-                text = "Login",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+
+        // Hiển thị nút Login hoặc Icon Email
+        if (token == null) {
+            Button(
+                onClick = { mainNavController.navigate(Screen.Auth.route) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                modifier = Modifier
+                    .height(35.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "Login",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.Email, // Icon mặc định hoặc tùy chỉnh
+                contentDescription = "Email Icon",
+                modifier = Modifier.size(35.dp),
+                tint = Color.White
             )
         }
     }
 }
+
 
 @Composable
 fun BannerSection(bannerList: List<String>, currentImageIndex: Int) {
@@ -243,32 +270,34 @@ fun SearchBar(
     onValueChange: (TextFieldValue) -> Unit
 ) {
 
-        Box(
-            modifier = Modifier.fillMaxSize()
-                .padding(16.dp)
-                .border(2.dp, Color.Gray, RoundedCornerShape(100.dp))
-                .clickable {
-                    navController.navigate(Screen.SearchScreen.route) // Điều hướng khi nhấn vào toàn bộ SearchBar
-                },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .border(2.dp, Color.Gray, RoundedCornerShape(100.dp))
+            .clickable {
+                navController.navigate(Screen.SearchScreen.route) // Điều hướng khi nhấn vào toàn bộ SearchBar
+            },
 
-        ){
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search Icon",
-                    tint = Color.Gray
-                )
-                Text(
-                    text = "Search...",
-                    color = Color.Gray,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+        ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search Icon",
+                tint = Color.Gray
+            )
+            Text(
+                text = "Search...",
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
+    }
 
 
 //        TextField(
@@ -305,7 +334,7 @@ fun SearchBar(
 }
 
 @Composable
-fun SectionTitle(title: String,color: Color) {
+fun SectionTitle(title: String, color: Color) {
     Text(
         text = title,
         modifier = Modifier.padding(start = 8.dp, top = 8.dp),
@@ -316,16 +345,25 @@ fun SectionTitle(title: String,color: Color) {
 }
 
 @Composable
-fun NewProductItem(navController: NavController, sanPham: SanPham,
-                   chiTietSanPhamMap: Map<String, List<ChiTietSanPham>>,ipAddress: String) {
-//    Log.d("HomeScreen", "List size: ${sanPham}")
-    // Địa chỉ IP của mạng
-    val chiTietSanPhamList = chiTietSanPhamMap[sanPham._id]
-    val chiTietSanPham = chiTietSanPhamList?.firstOrNull()
+fun NewProductItem(
+    navController: NavController,
+    sanPham: SanPham,
+    ipAddress: String,
+    viewModel: SanPhamViewModel
+) {
 
+    val chiTietSanPhamList by viewModel.chiTietSanPhamList.observeAsState(emptyList())
+
+    // Gọi API khi màn hình được tạo
+    LaunchedEffect(sanPham._id) {
+        viewModel.fetchChiTietSanPhamOfid(sanPham._id)
+    }
+
+    // Lấy sản phẩm đầu tiên (nếu có)
+    val chiTietSanPham = chiTietSanPhamList.firstOrNull()
     // Chuyển đổi đối tượng thành chuỗi JSON
-    val sanPhamJson = Uri.encode(toJson(sanPham))
-    val chiTietSanPhamListJson = Uri.encode(toJson(chiTietSanPhamList ?: emptyList()))
+    val chiTietSanPhamJson = Uri.encode(toJson(chiTietSanPham ?: emptyMap<String, Any>()))
+
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -334,8 +372,10 @@ fun NewProductItem(navController: NavController, sanPham: SanPham,
             .shadow(8.dp, RoundedCornerShape(6.dp))
             .background(Color.White, shape = RoundedCornerShape(6.dp))
             .clickable {
+                Log.d("NewProductItem", "Navigating to ProductDetail with JSON: $chiTietSanPham")
+
                 navController.navigate(
-                    Screen.ProductDetail.route + "/${sanPhamJson}/${chiTietSanPhamListJson}"
+                    Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
                 )
             }
     ) {
@@ -397,15 +437,21 @@ fun NewProductItem(navController: NavController, sanPham: SanPham,
 fun ProductItem(
     navController: NavController,
     sanPham: SanPham,
-    chiTietSanPhamMap: Map<String, List<ChiTietSanPham>>,
+    viewModel: SanPhamViewModel,
     ipAddress: String
 ) {
     // Lấy danh sách ChiTietSanPham từ chiTietSanPhamMap theo id sản phẩm
-    val chiTietSanPhamList = chiTietSanPhamMap[sanPham._id]
-    val chiTietSanPham = chiTietSanPhamList?.firstOrNull()
+    val chiTietSanPhamList by viewModel.chiTietSanPhamList.observeAsState(emptyList())
+
+    // Gọi API khi màn hình được tạo
+    LaunchedEffect(sanPham._id) {
+        viewModel.fetchChiTietSanPhamOfid(sanPham._id)
+    }
+
+    // Lấy sản phẩm đầu tiên (nếu có)
+    val chiTietSanPham = chiTietSanPhamList.firstOrNull()
     // Chuyển đổi đối tượng thành chuỗi JSON
-    val sanPhamJson = Uri.encode(toJson(sanPham))
-    val chiTietSanPhamListJson = Uri.encode(toJson(chiTietSanPhamList ?: emptyList()))
+    val chiTietSanPhamJson = Uri.encode(toJson(chiTietSanPham ?: emptyMap<String, Any>()))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -416,7 +462,7 @@ fun ProductItem(
             .background(Color.White, shape = RoundedCornerShape(6.dp))
             .clickable {
                 navController.navigate(
-                    Screen.ProductDetail.route + "/${sanPhamJson}/${chiTietSanPhamListJson}"
+                    Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
                 )
             }
     ) {
@@ -460,7 +506,6 @@ fun ProductItem(
     }
 }
 
-
 @Composable
 fun AnimatedDivider(
     isVisible: Boolean,
@@ -486,8 +531,12 @@ fun AnimatedDivider(
         )
     }
 }
+
 @Composable
 @Preview(showBackground = true)
 fun HomeScreenPreview() {
-    HomeScreen(bottomNavController = rememberNavController(), mainNavController = rememberNavController());
+    HomeScreen(
+        bottomNavController = rememberNavController(),
+        mainNavController = rememberNavController()
+    );
 }

@@ -1,5 +1,6 @@
 package bottomnavigation.ScreenBottomNavigation
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -8,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,7 +48,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -66,73 +70,101 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
+import com.google.gson.Gson
 import kotlinx.serialization.json.Json
+import model.AppConfig
 import model.ChiTietSanPham
 import model.EncryptedPrefsManager
+import model.HangSP
 import model.Review
 import model.SanPham
+import model.Screen
 import model.imagesItem
+import view.OrderDetailsScreen
 import view.alert_dialog.CartIconWithLoginCheck
+import viewmodel.CartViewModel
+import viewmodel.SanPhamViewModel
 import java.net.URLDecoder
+import java.net.URLEncoder
 
 
 @Composable
 fun ProductDetail(   navController: NavController,
-                     sanPhamJson: String?,
-                     chiTietSanPhamMapJson: String?) {
+                     chiTietSanPhamJson: String?,
+                     cartViewModel: CartViewModel= viewModel(),
+                     sanPhamViewModel: SanPhamViewModel= viewModel()
+) {
 
 
 
     var isReviewDropdownVisible by remember { mutableStateOf(false) }
 
-    // Giải mã chuỗi JSON trước khi decode thành đối tượng
-    val sanPham = sanPhamJson?.let {
+    // Giải mã và chuyển đổi chuỗi JSON thành đối tượng `ChiTietSanPham`
+    val chiTietSanPham = chiTietSanPhamJson?.let {
         val decodedJson = URLDecoder.decode(it, "UTF-8")
-        Log.d("ProductDetail", "Decoded sanPhamJson: $decodedJson") // Log JSON sau khi decode
+        Log.d("ProductDetail", "Decoded chiTietSanPhamJson: $decodedJson") // Log JSON sau khi decode
         try {
-            val sanPhamObj = Json.decodeFromString<SanPham>(decodedJson)
-            Log.d("ProductDetail", "SanPham decoded successfully: $sanPhamObj")
-            sanPhamObj
+            val chiTiet = Json.decodeFromString<ChiTietSanPham>(decodedJson)
+            Log.d("ProductDetail", "ChiTietSanPham decoded successfully: $chiTiet") // Log đối tượng ChiTietSanPham
+            chiTiet
         } catch (e: Exception) {
-            Log.e("ProductDetail", "Error decoding SanPham: ${e.message}", e)
+            Log.e("ProductDetail", "Error decoding ChiTietSanPham: ${e.message}", e)
             null
         }
     }
 
-    val chiTietSanPhamList = chiTietSanPhamMapJson?.let {
-        val decodedJson = URLDecoder.decode(it, "UTF-8")
-        Log.d("ProductDetail", "Decoded chiTietSanPhamMapJson: $decodedJson") // Log JSON sau khi decode
-        try {
-            val chiTietList = Json.decodeFromString<List<ChiTietSanPham>>(decodedJson)
-            Log.d("ProductDetail", "ChiTietSanPhamList decoded successfully: $chiTietList")
-            chiTietList
-        } catch (e: Exception) {
-            Log.e("ProductDetail", "Error decoding ChiTietSanPhamList: ${e.message}", e)
-            null
+
+    val chiTietSanPhamList by sanPhamViewModel.chiTietSanPhamList.observeAsState(emptyList())
+
+    LaunchedEffect(Unit) {
+        if (chiTietSanPham != null) {
+            sanPhamViewModel.fetchChiTietSanPhamOfid(chiTietSanPham.idSanPham._id)
         }
+
     }
+
+
+    val sanPham = chiTietSanPham?.idSanPham?.let {
+        SanPham(
+            _id = it._id,
+            idHangSP = HangSP(
+                _id = it.idHangSP._id,
+                TenHang = it.idHangSP.TenHang
+            ),
+            tenSP = it.tenSP,
+            anhSP = it.anhSP
+        )
+    }
+
 
     // Sử dụng ảnh đầu tiên làm ảnh chính, nếu có
-    val ipAddress = "http://192.168.16.104:5000"
+    val ipAddress =  AppConfig.ipAddress
 
 // Sử dụng ảnh đầu tiên làm ảnh chính, nếu có
     val selectedImage = remember {
         mutableStateOf(sanPham?.anhSP?.firstOrNull()?.let { "$ipAddress$it" } ?: "")
     }
+
+    // Log giá trị
+
     val imageScrollState = rememberScrollState()
 
     chiTietSanPhamList?.let { list ->
         println("Chi tiết sản phẩm: ${list.joinToString { it.MoTa }}")
     }
 
-    var selectedRam by remember { mutableStateOf<String?>(null) }
-    var selectedSSD by remember { mutableStateOf<String?>(null) }
-    var selectedManHinh by remember { mutableStateOf<String?>(null) }
-    var selectedMauSac by remember { mutableStateOf<String?>(null) }
+    var selectedRam by remember { mutableStateOf(chiTietSanPham?.Ram) }
+    var selectedSSD by remember { mutableStateOf(chiTietSanPham?.SSD) }
+    var selectedManHinh by remember { mutableStateOf(chiTietSanPham?.ManHinh) }
+    var selectedMauSac by remember { mutableStateOf(chiTietSanPham?.MauSac) }
+
 
     // Lọc các lựa chọn từ danh sách chi tiết sản phẩm
     val ramOptions = chiTietSanPhamList?.map { it.Ram }?.distinct() ?: emptyList()
@@ -140,6 +172,8 @@ fun ProductDetail(   navController: NavController,
     val manHinhOptions = chiTietSanPhamList?.map { it.ManHinh }?.distinct() ?: emptyList()
     val mauSacOptions = chiTietSanPhamList?.map { it.MauSac }?.distinct() ?: emptyList()
 
+    var chiTietSanPhamMap by remember { mutableStateOf<Map<String, Pair<Double, ChiTietSanPham>>>(emptyMap()) }
+    var showOrderDetails by remember { mutableStateOf(false) }
     // Hàm để lọc chi tiết sản phẩm
     val filteredProducts = chiTietSanPhamList?.filter {
         (selectedRam == null || it.Ram == selectedRam) &&
@@ -148,12 +182,12 @@ fun ProductDetail(   navController: NavController,
                 (selectedMauSac == null || it.MauSac == selectedMauSac)
     }
 
-    // Kiểm tra nếu có sản phẩm phù hợp
-    val selectedProduct = filteredProducts?.firstOrNull()
+// Kiểm tra nếu có sản phẩm phù hợp
+    val selectedProduct = filteredProducts?.firstOrNull { it._id == chiTietSanPham?._id }
 
 
 
-
+    val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
 
     val reviewData = listOf(
         Review(
@@ -181,13 +215,16 @@ fun ProductDetail(   navController: NavController,
             "Amazing service, will buy again!Great product, highly recommended!Great product, highly recommended!Great product, highly recommended!Great product, highly recommended!"
         ),
 
-    )
+        )
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xffffffff)),
         contentPadding = PaddingValues(bottom = 30.dp)
     ) {
+
         // Header
         item {
             Row(
@@ -220,20 +257,14 @@ fun ProductDetail(   navController: NavController,
                     color = Color.Black,
                     textAlign = TextAlign.Center
                 )
-                IconButton(
-                    onClick = {},
+                AsyncImage(
+                    model = imgLogo,
+                    contentDescription = "Logo",
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.LightGray)
-                        .size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = "favorite",
-                        tint = Color.Black,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                        .size(50.dp), // Set size of the image
+                    contentScale = ContentScale.Fit // Scale the image to fit within the size
+                )
+
             }
         }
 
@@ -243,10 +274,15 @@ fun ProductDetail(   navController: NavController,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)
             ) {
                 // Hiển thị ảnh chính
-                if (selectedImage.value.isNotEmpty()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = selectedImage.value),
+                // Lấy URL của ảnh từ `selectedImage.value`, nếu có
+                val imageUrl = selectedImage.value.takeIf { it.isNotEmpty() }
+
+                if (imageUrl != null) {
+                    // Hiển thị hình ảnh từ URL
+                    AsyncImage(
+                        model = imageUrl,
                         contentDescription = "Profile Image",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(250.dp)
@@ -254,10 +290,10 @@ fun ProductDetail(   navController: NavController,
                             .border(
                                 BorderStroke(2.dp, Color(0x809C7056)),
                                 shape = RoundedCornerShape(10.dp)
-                            ),
-                        contentScale = ContentScale.Crop
+                            )
                     )
                 }
+
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -281,9 +317,10 @@ fun ProductDetail(   navController: NavController,
                                     }
                                     .clip(RoundedCornerShape(5.dp))
                             ) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(model = imageUrl),
+                                AsyncImage(
+                                    model = imageUrl,
                                     contentDescription = "Image",
+                                    contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(5.dp))
                                         .size(70.dp)
@@ -293,13 +330,13 @@ fun ProductDetail(   navController: NavController,
                                                 if (selectedImage.value == imageUrl) Color(0x809C7056) else Color(0xB3FFFFFF)
                                             ),
                                             shape = RoundedCornerShape(5.dp)
-                                        ),
-                                    contentScale = ContentScale.Crop
+                                        )
                                 )
                             }
                         }
                     }
                 }
+
 
             }
         }
@@ -333,36 +370,7 @@ fun ProductDetail(   navController: NavController,
                 )
             }
         }
-        // Reviews Section
-        item {
-            Row(
-                modifier = Modifier
-                    .padding(top = 10.dp, end = 20.dp, start = 20.dp, bottom = 30.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                //Tao chu nghieng va gach chan
-                Text(
-                    text = buildAnnotatedString {
-                        val text = "(${reviewData.size}+ Reviews)"
-                        append(text)
-                        addStyle(
-                            style = SpanStyle(textDecoration = TextDecoration.Underline),
-                            start = 0,
-                            end = text.length
-                        )
-                    },
-                    fontSize = 16.sp,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.clickable {
-                        isReviewDropdownVisible = !isReviewDropdownVisible
-                    }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                AverageRatingRow(reviewData = reviewData)
-            }
-        }
+
 
 
         // Dropdown cho thông số sản phẩm
@@ -401,7 +409,7 @@ fun ProductDetail(   navController: NavController,
                 }
 
             }
-            }
+        }
 
         // Mô tả sản phẩm
         item {
@@ -416,11 +424,7 @@ fun ProductDetail(   navController: NavController,
                     .fillMaxHeight() // Áp dụng fillMaxHeight cho phần mô tả để không bị thiếu chữ
             )
         }
-        if (isReviewDropdownVisible) {
-            items(reviewData) { review ->
-                ReviewItem(review)
-            }
-        }
+
         // Nút thêm vào giỏ hàng
         item {
             Row(
@@ -430,7 +434,24 @@ fun ProductDetail(   navController: NavController,
             ) {
                 // Nút "Mua ngay"
                 Button(
-                    onClick = {},
+                    onClick = {
+                        // Log trước khi thực hiện các bước
+                        Log.d("ButtonClick", "Button clicked. Preparing data.")
+
+                        val chiTietSanPhamMap = selectedProduct?.let {
+                            mapOf(
+                                it._id to Pair(1.0, it)
+                            )
+                        } ?: emptyMap()
+
+                        val chiTietSanPhamJson = Uri.encode(Gson().toJson(chiTietSanPhamMap))
+
+                        try {
+                            navController.navigate(Screen.OrderDetailsScreen.route + "/$chiTietSanPhamJson")
+                        } catch (e: Exception) {
+                            Log.e("ButtonClick", "Navigation error: ${e.message}")
+                        }
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 20.dp)
@@ -450,15 +471,51 @@ fun ProductDetail(   navController: NavController,
                 }
 
 
-                    CartIconWithLoginCheck(
-                        navController = navController,
-                        selectedProduct = selectedProduct
-                    )
+                CartIconWithLoginCheck(
+                    navController = navController,
+                    selectedProduct = selectedProduct,
+                    cartViewModel
+                )
 
 
             }
         }
+        // Reviews Section
+        item {
+            Row(
+                modifier = Modifier
+                    .padding(top = 10.dp, end = 20.dp, start = 20.dp, bottom = 30.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                //Tao chu nghieng va gach chan
+                AverageRatingRow(reviewData = reviewData)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        val text = "(${reviewData.size}+ Reviews)"
+                        append(text)
+                        addStyle(
+                            style = SpanStyle(textDecoration = TextDecoration.Underline),
+                            start = 0,
+                            end = text.length
+                        )
+                    },
+                    fontSize = 16.sp,
+                    fontStyle = FontStyle.Italic,
+                    modifier = Modifier.clickable {
+                        isReviewDropdownVisible = !isReviewDropdownVisible
+                    }
+                )
 
+            }
+        }
+        if (isReviewDropdownVisible) {
+            items(reviewData) { review ->
+                ReviewItem(review)
+            }
+        }
 
     }
 }
@@ -638,8 +695,8 @@ fun calculateAverageRating(reviews: List<Review>): Float {
 // Hàm mở rộng để định dạng số thập phân
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
-@Composable
-@Preview(showBackground = true)
-private fun ProductDetailPreview() {
-    ProductDetail(navController = rememberNavController(), null, null)
-}
+//@Composable
+//@Preview(showBackground = true)
+//private fun ProductDetailPreview() {
+//    ProductDetail(navController = rememberNavController())
+//}

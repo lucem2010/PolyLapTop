@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import model.EncryptedPrefsManager
+import model.Screen
 import viewmodel.UserViewModel
 
 @Composable
@@ -50,7 +51,7 @@ fun LoginScreen(viewModel: UserViewModel = viewModel(), navController: NavContro
     // Lắng nghe các thay đổi trong trạng thái của ViewModel
     val onSuccess: (String, String, String, String) -> Unit = { message, accessToken, refreshToken, userId ->
         // Lưu thông tin đăng nhập vào SharedPreferences
-        EncryptedPrefsManager.saveLoginInfo(context, userId, username, password)
+        EncryptedPrefsManager.saveLoginInfo(context, userId, username, password,accessToken)
         // Xử lý thành công, điều hướng về màn hình trước
         Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
         navController.popBackStack() // Trở lại màn hình trước
@@ -123,7 +124,32 @@ fun LoginScreen(viewModel: UserViewModel = viewModel(), navController: NavContro
 
                     // Bắt đầu đăng nhập và gọi hàm trong ViewModel
                     isLoading = true
-                    viewModel.loginUser(username, password, onSuccess, onError)
+                    viewModel.loginUser(
+                        username, password,
+                        onSuccess = { message, accessToken, refreshToken, userId ->
+                            // Lưu thông tin đăng nhập vào EncryptedPrefs
+                            EncryptedPrefsManager.saveLoginInfo(
+                                context,
+                                userId,
+                                username,
+                                password,
+                                accessToken // Lưu accessToken vào token
+                            )
+
+                            // Chuyển đến màn hình chính hoặc bất kỳ màn hình nào bạn muốn
+                            navController.navigate(Screen.BottomNav.route) {
+                                popUpTo("auth") { inclusive = true }
+                            }
+
+                            // Dừng trạng thái tải
+                            isLoading = false
+                        },
+                        onError = { error ->
+                            // Xử lý lỗi nếu đăng nhập thất bại
+                            errorMessage = error
+                            isLoading = false
+                        }
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
@@ -140,6 +166,7 @@ fun LoginScreen(viewModel: UserViewModel = viewModel(), navController: NavContro
                     )
                 }
             }
+
         }
     }
 }
