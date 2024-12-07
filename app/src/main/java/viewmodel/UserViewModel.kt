@@ -14,7 +14,6 @@ import data.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import model.EncryptedPrefsManager
 import model.User
 
 class UserViewModel : ViewModel() {
@@ -24,22 +23,36 @@ class UserViewModel : ViewModel() {
     private val _updateUserStatus = MutableLiveData<Result<Boolean>>()
     val updateUserStatus: LiveData<Result<Boolean>> get() = _updateUserStatus
 
-    // Hàm để cập nhật thông tin người dùng
     fun updateUser(token: String, user: User) {
         viewModelScope.launch {
             try {
+                // Log thông tin đầu vào
+                Log.d("UpdateUser", "Token: Bearer $token")
+                Log.d("UpdateUser", "User Data: $user")
+
                 // Gửi yêu cầu cập nhật người dùng
                 val response = RetrofitClient.apiService.updateUser("Bearer $token", user)
+
+                // Log phản hồi từ API
+                Log.d("UpdateUser", "Response: ${response.raw()}")
+                Log.d("UpdateUser", "Response Body: ${response.body()}")
+                Log.d("UpdateUser", "Response Code: ${response.code()}")
 
                 // Kiểm tra phản hồi từ API
                 if (response.isSuccessful) {
                     // Nếu thành công, cập nhật LiveData
+                    Log.d("UpdateUser", "Update Successful")
                     _updateUserStatus.postValue(Result.success(true))
                 } else {
                     // Nếu không thành công, cập nhật LiveData với lỗi
-                    _updateUserStatus.postValue(Result.failure(Throwable("Update failed: ${response.message()}")))
+                    val errorMessage = "Update failed: ${response.message()}"
+                    Log.e("UpdateUser", errorMessage)
+                    _updateUserStatus.postValue(Result.failure(Throwable(errorMessage)))
                 }
             } catch (e: Exception) {
+                // Log lỗi xảy ra
+                Log.e("UpdateUser", "Exception: ${e.message}", e)
+
                 // Xử lý ngoại lệ và cập nhật LiveData
                 _updateUserStatus.postValue(Result.failure(e))
             }
@@ -78,7 +91,7 @@ class UserViewModel : ViewModel() {
     fun loginUser(
         username: String,
         password: String,
-        onSuccess: (String, String, String, String) -> Unit,
+        onSuccess: (String, User, String, String) -> Unit, // Updated to include User and tokens
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
@@ -95,11 +108,23 @@ class UserViewModel : ViewModel() {
                         // Lấy thông tin từ phản hồi
                         val accessToken = it.AccessToken
                         val refreshToken = it.RefeshToken
-                        val userId = it._id
-                        val role = it.Role
 
-                        // Gọi hàm onSuccess và truyền các thông tin đăng nhập
-                        onSuccess("Đăng nhập thành công!", accessToken, refreshToken, userId)
+
+                        // Tạo đối tượng User từ phản hồi API
+                        val loggedInUser = User(
+                            UserName = it.UserName,
+                            Password = password, // User's password is passed here as well
+                            HoTen = it.HoTen,
+                            Tuoi = it.Tuoi?.toInt(), // Convert Tuoi to Int
+                            Email = it.Email,
+                            Sdt = it.Sdt,
+                            Avatar = it.Avatar,
+                            DiaChi = it.DiaChi,
+
+                        )
+
+                        // Gọi hàm onSuccess và truyền đối tượng User cùng với AccessToken và RefreshToken
+                        onSuccess("Đăng nhập thành công!", loggedInUser, accessToken, refreshToken)
                     }
                 } else {
                     onError("Lỗi: ${response.errorBody()?.string()}")
@@ -112,6 +137,8 @@ class UserViewModel : ViewModel() {
     }
 
 
+
+    // Function to logout
     fun logoutUser(
         token: String,
         onSuccess: (String) -> Unit,
@@ -119,23 +146,29 @@ class UserViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             try {
-                // Gọi API logout với token của người dùng
+                // Gọi API logout
                 val response = RetrofitClient.apiService.logout("Bearer $token")
 
                 if (response.isSuccessful) {
-                    // Xử lý khi logout thành công
+                    // Khi logout thành công
                     onSuccess("Đăng xuất thành công!")
                 } else {
-                    // Xử lý khi logout thất bại
-                    onError("Lỗi: ${response.errorBody()?.string()}")
+                    // Lỗi khi gọi API
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = if (!errorBody.isNullOrEmpty()) {
+                        "Lỗi từ server: $errorBody"
+                    } else {
+                        "Lỗi không xác định, mã lỗi: ${response.code()}"
+                    }
+                    onError(errorMessage)
                 }
             } catch (e: Exception) {
-                Log.e("LogoutError", "Exception: ${e.message}")
+                // Xử lý lỗi ngoại lệ
+                Log.e("LogoutError", "Exception: ${e.message}", e)
                 onError("Lỗi kết nối. Vui lòng thử lại!")
             }
         }
     }
-
 
     private val _changePasswordResponse = MutableLiveData<ApiService.ApiResponse>()
     val changePasswordResponse: LiveData<ApiService.ApiResponse> get() = _changePasswordResponse
@@ -181,14 +214,11 @@ class UserViewModel : ViewModel() {
         _error.postValue(null)
     }
     // Sử dụng MutableLiveData để quản lý trạng thái sáng/tối
-    private val _isDarkTheme = mutableStateOf(false)
-    val isDarkTheme: State<Boolean> get() = _isDarkTheme
+    private val _isDarkTheme = MutableLiveData<Boolean>()
+
+    // Lấy giá trị theme từ EncryptedPrefsManager khi ViewModel được khởi tạo
+    val isDarkTheme: LiveData<Boolean> get() = _isDarkTheme
 
 
-    fun toggleTheme() {
-        _isDarkTheme.value = !_isDarkTheme.value
-    }
-    fun setSystemTheme(isDark: Boolean) {
-        _isDarkTheme.value = isDark
-    }
+
 }

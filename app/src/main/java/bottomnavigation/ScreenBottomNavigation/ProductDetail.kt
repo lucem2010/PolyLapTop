@@ -44,11 +44,13 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarHalf
 import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -81,11 +83,11 @@ import com.google.gson.Gson
 import kotlinx.serialization.json.Json
 import model.AppConfig
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
 import model.HangSP
 import model.Review
 import model.SanPham
 import model.Screen
+import model.SharedPrefsManager
 import model.imagesItem
 import view.OrderDetailsScreen
 import view.alert_dialog.CartIconWithLoginCheck
@@ -103,6 +105,7 @@ fun ProductDetail(   navController: NavController,
 ) {
 
 
+    val showDialogState = remember { mutableStateOf(false) }
 
     var isReviewDropdownVisible by remember { mutableStateOf(false) }
 
@@ -216,6 +219,9 @@ fun ProductDetail(   navController: NavController,
         ),
 
         )
+
+    val context = LocalContext.current
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
 
 
     LazyColumn(
@@ -432,25 +438,32 @@ fun ProductDetail(   navController: NavController,
                     .fillMaxWidth()
                     .padding(start = 20.dp, end = 20.dp, bottom = 10.dp)
             ) {
+
+
                 // Nút "Mua ngay"
                 Button(
                     onClick = {
                         // Log trước khi thực hiện các bước
                         Log.d("ButtonClick", "Button clicked. Preparing data.")
+                        if (token == null) {
+                            showDialogState.value = true  // Hiển thị dialog
+                        }  else{
+                            val chiTietSanPhamMap = selectedProduct?.let {
+                                mapOf(
+                                    it._id to Pair(1.0, it)
+                                )
+                            } ?: emptyMap()
 
-                        val chiTietSanPhamMap = selectedProduct?.let {
-                            mapOf(
-                                it._id to Pair(1.0, it)
-                            )
-                        } ?: emptyMap()
+                            val chiTietSanPhamJson = Uri.encode(Gson().toJson(chiTietSanPhamMap))
 
-                        val chiTietSanPhamJson = Uri.encode(Gson().toJson(chiTietSanPhamMap))
-
-                        try {
-                            navController.navigate(Screen.OrderDetailsScreen.route + "/$chiTietSanPhamJson")
-                        } catch (e: Exception) {
-                            Log.e("ButtonClick", "Navigation error: ${e.message}")
+                            try {
+                                navController.navigate(Screen.OrderDetailsScreen.route + "/$chiTietSanPhamJson")
+                            } catch (e: Exception) {
+                                Log.e("ButtonClick", "Navigation error: ${e.message}")
+                            }
                         }
+
+
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -469,6 +482,10 @@ fun ProductDetail(   navController: NavController,
                         fontWeight = FontWeight.Bold
                     )
                 }
+
+
+
+                    CheckLoginDialog(token, navController,showDialogState)
 
 
                 CartIconWithLoginCheck(
@@ -691,6 +708,45 @@ fun calculateAverageRating(reviews: List<Review>): Float {
         0f
     }
 }
+
+
+
+@Composable
+fun CheckLoginDialog(
+    token: String?,
+    navController: NavController,
+    showDialogState: MutableState<Boolean>
+) {
+    if (showDialogState.value) {
+        AlertDialog(
+            onDismissRequest = {
+                showDialogState.value = false // Đóng dialog khi người dùng nhấn ngoài
+            },
+            title = { Text(text = "Bạn chưa đăng nhập") },
+            text = { Text(text = "Bạn cần đăng nhập để tiếp tục.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        navController.navigate(Screen.Auth.route)
+                        showDialogState.value = false // Đóng dialog sau khi chuyển đến màn hình đăng nhập
+                    }
+                ) {
+                    Text("Đăng nhập")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        showDialogState.value = false // Đóng dialog khi người dùng nhấn "Đóng"
+                    }
+                ) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
+}
+
 
 // Hàm mở rộng để định dạng số thập phân
 fun Float.format(digits: Int) = "%.${digits}f".format(this)

@@ -163,4 +163,12 @@ class SanPhamViewModel : ViewModel() {
             _chiTietSanPhamMap.postValue(chiTietMap)
         }
     }
+
+
+    fun getFirstChiTietList(): List<ChiTietSanPham> {
+        return _allChiTietSanPhamMap.value?.mapNotNull { (_, chiTietList) ->
+            chiTietList.firstOrNull() // Lấy phần tử đầu tiên nếu tồn tại
+        } ?: emptyList() // Trả về danh sách rỗng nếu không có dữ liệu
+    }
+
 }
