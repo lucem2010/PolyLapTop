@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import data.ApiService
 import data.RetrofitClient
 import kotlinx.coroutines.launch
+import model.ChiTietSanPham
 import model.GioHang
 import org.json.JSONObject
 import retrofit2.HttpException
@@ -174,6 +176,43 @@ class CartViewModel : ViewModel()  {
             }
         }
     }
-
+    fun ThanhToan(
+        token: String,
+        Type: String,
+        SanPhamCTs: List<ApiService.SanPhamCT>,
+        context:Context,
+        callBack: (Boolean?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val request = ApiService.ThanhToanRequest(Type = Type, SanPhamCTs = SanPhamCTs)
+                val response = apiService.ThanhToan("Bearer $token", request)
+//                val responseBodyString = response.body()?.toString()
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "${response.body()?.message}", Toast.LENGTH_SHORT).show()
+                    callBack(true)
+                } else {
+                    Toast.makeText(context,"${response.body()?.message}",Toast.LENGTH_SHORT).show()
+                    callBack(false)
+                }
+            } catch (e: HttpException) {
+                Log.e("AddToCart", "HttpException: ${e.message()}")
+                _errorMessage.value = "Lỗi server: ${e.message()}"
+                // Hiển thị thông báo lỗi server
+                Toast.makeText(context, "Lỗi server: ${e.message()}", Toast.LENGTH_SHORT).show()
+                callBack(false)
+            } catch (e: IOException) {
+                Log.e("AddToCart", "IOException: ${e.message}")
+                _errorMessage.value = "Lỗi kết nối mạng. Vui lòng kiểm tra lại internet."
+                // Hiển thị thông báo lỗi kết nối mạng
+                Toast.makeText(context, "Lỗi kết nối mạng. Vui lòng kiểm tra lại internet.", Toast.LENGTH_SHORT).show()
+                callBack(false)
+            } finally {
+                _isLoading.value = false
+                Log.d("AddToCart", "Request completed")
+                callBack(false)
+            }
+        }
+    }
 
 }

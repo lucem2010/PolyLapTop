@@ -53,6 +53,12 @@ android {
 
 dependencies {
     implementation(libs.androidx.runtime.livedata)
+    implementation(fileTree(mapOf(
+        "dir" to "D:\\DATN\\New folder\\PolyLapTop\\app\\Zalo",
+        "include" to listOf("*.aar", "*.jar"),
+        "exclude" to listOf("")
+    )))
+    implementation(libs.billing)
     val sheetsVersion = "1.1.1"
     implementation ("androidx.security:security-crypto:1.0.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
@@ -68,6 +74,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation ("androidx.compose.material3:material3:<latest_version>")
     implementation ("androidx.compose.animation:animation:1.5.0")  // Cập nhật lên phiên bản mới nhất nếu cần
+    implementation("com.squareup.okhttp3:okhttp:4.6.0")
+    implementation("commons-codec:commons-codec:1.14")
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

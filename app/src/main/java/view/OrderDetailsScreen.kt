@@ -2,8 +2,11 @@ package view
 
 
 
+import android.app.Activity
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,11 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -30,30 +35,59 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import coil.compose.AsyncImage
 import coil.compose.rememberImagePainter
 import com.example.polylaptop.R
+import com.example.polylaptop.zalopay.Api.CreateOrder
 import com.google.gson.Gson
 import com.google.gson.internal.LinkedTreeMap
 import com.google.gson.reflect.TypeToken
+import data.ApiService
+import data.RetrolfitZalop
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import model.AppConfig
 import model.ChiTietSanPham
+import model.EncryptedPrefsManager
 import model.Format
 import model.HangSP
 import model.SanPham
 import model.Screen
 import model.toJson
+import org.json.JSONObject
+import viewmodel.CartViewModel
+import viewmodel.PaymentViewModel
+import viewmodel.PaymentViewModelFactory
+import vn.zalopay.sdk.ZaloPayError
+import vn.zalopay.sdk.ZaloPaySDK
+import vn.zalopay.sdk.listeners.PayOrderListener
+import java.lang.reflect.Type
 import java.net.URLDecoder
 import java.text.NumberFormat
 import java.util.Locale
 
 
 @Composable
-fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?) {
+fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?, viewModel: PaymentViewModel) {
+
+
+    val context = LocalContext.current
+    var phuongThucThanhToan by remember { mutableStateOf("") }
+    var phuongThucThanhToanPayment by remember { mutableStateOf("") }
+    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
+    Log.d("loginInfo", "OrderDetailsScreen: $loginInfo")
+    val token = loginInfo?.token ?: ""
+    var CartViewModel: CartViewModel = viewModel()
+//    Log.d("abc", "OrderDetailsScreen: vao day ")
 //     Giải mã JSON thành Map
     // Parse JSON thành Map với xử lý rõ ràng từng phần tử
+
     val chiTietSanPhamMap: Map<String, Pair<Double, ChiTietSanPham>> = try {
         chiTietSanPhamJson?.let { json ->
             val type = object : TypeToken<Map<String, Pair<Double, LinkedTreeMap<String, Any>>>>() {}.type
@@ -66,6 +100,7 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
                     Gson().toJson(productMap),
                     ChiTietSanPham::class.java
                 )
+//                Log.d("abc", "OrderDetailsScreen: $chiTietSanPham ")
                 Pair(quantity, chiTietSanPham)
             }
         } ?: emptyMap()
@@ -73,6 +108,21 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
         Log.e("OrderDetailsScreen", "Error parsing JSON: ${e.message}")
         emptyMap()
     }
+    val TongTien = chiTietSanPhamMap.values.sumOf { it ->
+        it.first.toInt() * it.second.Gia.toInt()
+    }
+
+    val danhSachChiTietSanPham: List<ApiService.SanPhamCT> = chiTietSanPhamMap.values.map { it ->
+        ApiService.SanPhamCT(idSanPhamCT = it.second._id,
+            SoLuongMua = it.first.toInt())
+    }
+//    Log.d("CTSP", "OrderDetailsScreen: ${danhSachChiTietSanPham::class.simpleName}")
+//    Log.d("PTTT", "OrderDetailsScreen: $phuongThucThanhToan")
+
+
+
+
+
 
     Box(
         modifier = Modifier
@@ -141,11 +191,11 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
             Spacer(modifier = Modifier.height(10.dp))
             Detail(navController,chiTietSanPhamMap) // Hiển thị chi tiết
             Spacer(modifier = Modifier.height(10.dp))
-            Voucher() // Hiển thị voucher
-            Spacer(modifier = Modifier.height(10.dp))
-            TomTat() // Hiển thị tóm tắt
-            Spacer(modifier = Modifier.height(10.dp))
-            PhuongThucThanhToan() // Hiển thị phương thức thanh toán
+//            Voucher() // Hiển thị voucher
+//            Spacer(modifier = Modifier.height(10.dp))
+//            /TomTat() // Hiển thị tóm tắt
+//            Spacer(modifier = Modifier.height(10.dp))
+            PhuongThucThanhToan(onTextPhuongThuc = {newText -> phuongThucThanhToan = newText},onTextPhuongThucPayment = {newText -> phuongThucThanhToanPayment = newText}) // Hiển thị phương thức thanh toán
 
             // Spacer để tạo khoảng trống cuối để không bị Box đè lên
             Spacer(modifier = Modifier.height(70.dp))
@@ -158,6 +208,7 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
                 .align(Alignment.BottomCenter)
                 .background(Color.White)
                 .padding(16.dp)
+
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -169,13 +220,13 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Tổng (1 mặt hàng)",
+                        text = "Tổng (${chiTietSanPhamMap.values.size} mặt hàng)",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
                     Text(
-                        text = "179.000đ",
+                        text = "$TongTien đ",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
@@ -184,7 +235,37 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
 
                 // Nút đặt hàng
                 Button(
-                    onClick = { /* Xử lý đặt hàng */ },
+                    onClick = {
+                        if(phuongThucThanhToan.trim().isEmpty()) {
+                           return@Button Toast.makeText(context,"Vui lòng chọn phương thức thanh toán", Toast.LENGTH_SHORT).show()
+                        }
+                        if(phuongThucThanhToanPayment.trim().isEmpty() && phuongThucThanhToan.trim().isNotEmpty()){
+                            viewModel.thanhToanOffline(
+                            token = token, phuongThuc =  phuongThucThanhToan, danhSachSP =  danhSachChiTietSanPham, context =  context,
+                                onSuccess = {
+                                    navController.navigate(Screen.BottomNav.route){
+                                    popUpTo("welcome") { inclusive = true }
+                                }}
+                            )
+                        } else if( phuongThucThanhToanPayment.equals("Zalo") && phuongThucThanhToan.trim().isNotEmpty()){
+                            viewModel.createOrderAndPay(
+                                amount = TongTien.toString(),
+                                context = context,
+                                onPaymentSuccess = {
+                                    viewModel.thanhToanOffline(
+                                        token = token, phuongThuc =  phuongThucThanhToan, danhSachSP =  danhSachChiTietSanPham, context =  context,
+                                        onSuccess = {
+                                            navController.navigate(Screen.BottomNav.route){
+                                                popUpTo("welcome") { inclusive = true }
+                                            }}
+                                    )
+                                },
+                                onPaymentError = {
+                                    Toast.makeText(context, "Lỗi thanh toán: $it", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFF8774A)
@@ -547,165 +628,132 @@ fun TomTat() {
 
 }
 @Composable
-fun PhuongThucThanhToan() {
-    var isCodSelected by remember { mutableStateOf(false) }
-    var isMomoSelected by remember { mutableStateOf(false) }
-    var isZaloSelected by remember { mutableStateOf(false) }
+fun PhuongThucThanhToan(
+    onTextPhuongThuc: (String) -> Unit,
+    onTextPhuongThucPayment: (String) -> Unit
+) {
+    var selectedPaymentMethod by remember { mutableStateOf("") }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
-            .background(Color.White),
-        contentAlignment = Alignment.Center
+            .background(Color.White)
+            .padding(16.dp)
     ) {
-        Column(
+        Text(
+            text = "Phương thức thanh toán",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Thanh toán khi nhận hàng
+        PaymentOption(
+            icon = R.drawable.ic_cod, // Thay bằng icon COD
+            text = "Thanh toán khi nhận hàng",
+            isSelected = selectedPaymentMethod == "COD",
+            onClick = {
+                selectedPaymentMethod = "COD"
+                onTextPhuongThuc("Nhận hàng thanh toán")
+                onTextPhuongThucPayment("")
+            }
+        )
+
+        // ZaloPay
+        PaymentOption(
+            icon = R.drawable.ic_zalopay, // Thay bằng icon MoMo
+            text = "Thanh toán bằng Zalo Pay",
+            isSelected = selectedPaymentMethod == "Zalo",
+            onClick = {
+                selectedPaymentMethod = "Zalo"
+                onTextPhuongThuc("Thanh toán payment")
+                onTextPhuongThucPayment("Zalo")
+            }
+        )
+
+        //
+//        PaymentOption(
+//            icon = R.drawable.ic_zalopay, // Thay bằng icon ZaloPay
+//            text = "ZaloPay",
+//            description = "Liên kết tài khoản ZaloPay của bạn để thanh toán dễ dàng.",
+//            isSelected = selectedPaymentMethod == "ZaloPay",
+//            onClick = {
+//                selectedPaymentMethod = "ZaloPay"
+//                onTextPhuongThuc("Thanh toán payment")
+//                onTextPhuongThucPayment("Zalo")
+//            }
+//        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Xem thêm tùy chọn
+//        Row(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .clickable { /* Xử lý khi mở tất cả tùy chọn */ },
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Spacer(modifier = Modifier.weight(1f))
+//            Text(
+//                text = "Xem tất cả tùy chọn",
+//                fontSize = 14.sp,
+//                fontWeight = FontWeight.Bold,
+//                color = Color.Blue
+//            )
+//            Icon(
+//                painter = painterResource(id = R.drawable.chevron), // Thay icon phù hợp
+//                contentDescription = "Chevron",
+//                tint = Color.Gray,
+//                modifier = Modifier.size(20.dp)
+//            )
+//        }
+    }
+}
+
+@Composable
+fun PaymentOption(
+    @DrawableRes icon: Int,
+    text: String,
+    description: String? = null,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = icon),
+            contentDescription = null,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp, 16.dp, 16.dp, 0.dp)
-                .background(Color.White)
+                .size(40.dp)
+                .padding(end = 8.dp)
+        )
+        Column(
+            modifier = Modifier.weight(1f)
         ) {
-            Text(
-                text = "Phương thức thanh toán",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Phương thức COD
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Spacer(modifier = Modifier.width(10.dp))
+            Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            description?.let {
                 Text(
-                    text = "Thanh toán khi nhận hàng",
-                    fontSize = 16.sp,
-                    color = Color.Black,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    painter = painterResource(
-                        id = if (isCodSelected) R.drawable.button_red else R.drawable.button
-                    ),
-                    contentDescription = "COD Button",
-                    tint = if (isCodSelected) Color.Red else Color.Black,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable {
-                            isCodSelected = !isCodSelected
-                            isMomoSelected = false
-                            isZaloSelected = false
-                        }
-                )
-            }
-
-            Divider(color = Color.Gray, thickness = 0.5.dp)
-
-            // Phương thức Momo
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Ví điện tử MoMo(****7619)",
-                    fontSize = 16.sp,
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    painter = painterResource(
-                        id = if (isMomoSelected) R.drawable.button_red else R.drawable.button
-                    ),
-                    contentDescription = "MoMo Button",
-                    tint = if (isMomoSelected) Color.Red else Color.Black,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable {
-                            isMomoSelected = !isMomoSelected
-                            isCodSelected = false
-                            isZaloSelected = false
-                        }
-                )
-            }
-
-            Divider(color = Color.Black, thickness = 0.5.dp)
-
-            // Phương thức ZaloPay
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "ZaloPay",
-                            fontSize = 16.sp,
-                            color = Color.Black
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Liên kết",
-                            fontSize = 14.sp,
-                            color = Color.Red,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            painter = painterResource(id = R.drawable.chevron),
-                            contentDescription = "Chevron",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Text(
-                        text = "Liên kết tài khoản ZaloPay của bạn với TikTok Shop và thử tính năng thanh toán không cần mật khẩu",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Divider(color = Color.Gray, thickness = 0.5.dp)
-
-            // Xem tất cả tùy chọn
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { /* Xử lý mở rộng tất cả tùy chọn */ }
-                    .padding(vertical = 12.dp)
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "Xem tất cả tùy chọn",
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
-                Icon(
-                    painter = painterResource(id = R.drawable.chevron),
-                    contentDescription = "Chevron",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
+                    text = it,
+                    fontSize = 12.sp,
+                    color = Color.Gray
                 )
             }
         }
+        Icon(
+            painter = painterResource(
+                id = if (isSelected) R.drawable.ic_selected else R.drawable.ic_unselected // Icon toggle
+            ),
+            contentDescription = null,
+            tint = if (isSelected) Color.Green else Color.Gray,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 

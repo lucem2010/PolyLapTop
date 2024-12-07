@@ -1,7 +1,9 @@
 package com.example.polylaptop
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -37,27 +40,54 @@ import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
+import data.ApiService
 import model.Screen
 import view.AuthScreen
 import view.OrderDetailsScreen
 import view.WelcomeScreen
+import viewmodel.PaymentViewModel
 import viewmodel.UserViewModel
+import vn.zalopay.sdk.Environment
+import vn.zalopay.sdk.ZaloPaySDK
 import java.net.URLDecoder
 
 class MainActivity : ComponentActivity() {
+    private lateinit var paymentViewModel: PaymentViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Khởi tạo ViewModel
+        paymentViewModel = ViewModelProvider(this)[PaymentViewModel::class.java]
+
+        // khởi tạo zalopay
+        ZaloPaySDK.init(553, Environment.SANDBOX)
+
         enableEdgeToEdge()
         setContent {
+
             val userViewModel: UserViewModel = viewModel()
-            MyApp(userViewModel) // Truyền ViewModel vào MyApp
+            MyApp(userViewModel,paymentViewModel) // Truyền ViewModel vào MyApp
         }
 
+    }
+    // chuyển màn hình zalopay
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+//        Log.d("Vao day", "onNewIntent: ve man hinh")
+        paymentViewModel.handleZaloPayResult(
+            intent = intent,
+            onSuccess = {
+                Log.d("ZaloPayResult", "Thanh toán thành công")
+            },
+            onError = {
+                Log.e("ZaloPayResult", it)
+            }
+        )
     }
 }
 
 @Composable
-fun MyApp(viewModel: UserViewModel) {
+fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         // Màn hình chào mừng
@@ -95,7 +125,8 @@ fun MyApp(viewModel: UserViewModel) {
 
             OrderDetailsScreen(
                 navController = navController,
-                chiTietSanPhamJson = decodedJson
+                chiTietSanPhamJson = decodedJson,
+                viewModel = paymentViewModel
             )
         }
 

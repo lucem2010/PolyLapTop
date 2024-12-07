@@ -121,6 +121,25 @@ interface ApiService {
         @Body request: ChangePasswordRequest // Đối tượng chứa oldPassword và newPassword
     ): Response<ApiResponse>
 
+    data class SanPhamCT (
+        val idSanPhamCT: String,
+        val SoLuongMua: Int
+    )
+    data class ThanhToanRequest (
+        val Type: String,
+        val SanPhamCTs: List<SanPhamCT>
+    )
+    data class DonHangResponse(
+        val message: String,
+        val data: Any?
+    )
+
+    @POST("/don-hang/mua-hang")
+    suspend fun ThanhToan(
+        @Header("Authorization") token: String,
+        @Body request: ThanhToanRequest
+    ): Response<DonHangResponse>
+
 
 
 }
