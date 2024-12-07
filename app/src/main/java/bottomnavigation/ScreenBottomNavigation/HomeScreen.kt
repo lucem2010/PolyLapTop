@@ -49,9 +49,9 @@ import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 import model.AppConfig
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
 import model.SanPham
 import model.Screen
+import model.SharedPrefsManager
 import model.toJson
 import viewmodel.SanPhamViewModel
 
@@ -73,8 +73,8 @@ fun HomeScreen(
     )
 
     var currentImageIndex by remember { mutableStateOf(0) }
-    val sanPhamList by viewModel.sanPhamList.observeAsState(emptyList())
     var isRedAndVisible by remember { mutableStateOf(true) }
+    var firstChiTietList by remember { mutableStateOf<List<ChiTietSanPham>>(emptyList()) } // Biến toàn cục
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -84,7 +84,8 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.fetchSanPham()
+        viewModel.fetchAllChiTietSanPham()
+         firstChiTietList = viewModel.getFirstChiTietList()
 
     }
     LaunchedEffect(Unit) {
@@ -95,10 +96,9 @@ fun HomeScreen(
     }
 
     val context = LocalContext.current
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
 
-// Truy xuất các thuộc tính từ đối tượng `LoginInfo`
-    val token = loginInfo.token
+
 
     Box(
         modifier = Modifier
@@ -145,12 +145,11 @@ fun HomeScreen(
                     modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(sanPhamList) { sanPham ->
+                    items(firstChiTietList) { CTsanPham ->
                         NewProductItem(
                             navController = mainNavController,
-                            sanPham = sanPham,
+                            CTsanPham = CTsanPham,
                             ipAddress = ipAddress,
-                            viewModel
                         )
                     }
                 }
@@ -168,18 +167,17 @@ fun HomeScreen(
                 SectionTitle("Phổ biến", Color.Black)
             }
             // Chuyển LazyVerticalGrid thành một mục của LazyColumn
-            items(sanPhamList.chunked(2)) { rowItems ->
+            items(firstChiTietList.chunked(2)) { rowItems ->
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 8.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.aligned(alignment = Alignment.CenterHorizontally)
                 ) {
-                    rowItems.forEach { sanPham ->
+                    rowItems.forEach { CTsanPham ->
                         ProductItem(
                             navController = mainNavController,
-                            sanPham = sanPham,
-                            viewModel,
+                            CTsanPham = CTsanPham,
                             ipAddress = ipAddress
                         )
                     }
@@ -300,36 +298,6 @@ fun SearchBar(
     }
 
 
-//        TextField(
-//            value = searchText,
-//            onValueChange = onValueChange,
-//            placeholder = { Text(text = "Tìm kiếm") },
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(50.dp)
-//                .border(2.dp, Color.Gray, RoundedCornerShape(100.dp))
-//                .background(Color.White, shape = RoundedCornerShape(100.dp)),
-//            leadingIcon = {
-//                Icon(
-//                    imageVector = Icons.Default.Search,
-//                    contentDescription = "Search Icon",
-//                    tint = Color.Gray
-//                )
-//            },
-//            trailingIcon = {
-//                Icon(
-//                    imageVector = Icons.Default.FilterList,
-//                    contentDescription = "Filter Icon",
-//                    tint = Color.Gray
-//                )
-//            },
-//            colors = TextFieldDefaults.textFieldColors(
-//                containerColor = Color.Transparent,
-//                focusedIndicatorColor = Color.Transparent,
-//                unfocusedIndicatorColor = Color.Transparent
-//            ),
-//            readOnly = true // Đặt chế độ readOnly để ngăn người dùng nhập nội dung
-//        )
 
 }
 
@@ -347,88 +315,68 @@ fun SectionTitle(title: String, color: Color) {
 @Composable
 fun NewProductItem(
     navController: NavController,
-    sanPham: SanPham,
+    CTsanPham: ChiTietSanPham?,
     ipAddress: String,
-    viewModel: SanPhamViewModel
 ) {
-
-    val chiTietSanPhamList by viewModel.chiTietSanPhamList.observeAsState(emptyList())
-
-    // Gọi API khi màn hình được tạo
-    LaunchedEffect(sanPham._id) {
-        viewModel.fetchChiTietSanPhamOfid(sanPham._id)
-    }
-
-    // Lấy sản phẩm đầu tiên (nếu có)
-    val chiTietSanPham = chiTietSanPhamList.firstOrNull()
-    // Chuyển đổi đối tượng thành chuỗi JSON
-    val chiTietSanPhamJson = Uri.encode(toJson(chiTietSanPham ?: emptyMap<String, Any>()))
-
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(120.dp)
-            .shadow(8.dp, RoundedCornerShape(6.dp))
-            .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable {
-                Log.d("NewProductItem", "Navigating to ProductDetail with JSON: $chiTietSanPham")
-
-                navController.navigate(
-                    Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
-                )
-            }
-    ) {
-        // Lấy phần tử đầu tiên trong danh sách anhSP, nếu có
-        val imageUrl = sanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
-//        Log.d("NewProductItem: ", imageUrl.toString())
-
-        if (imageUrl != null) {
-            // Hiển thị hình ảnh từ URL của sản phẩm (nếu có)
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = sanPham.tenSP,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-            )
-        } else {
-            // Hình ảnh mặc định nếu không có URL
-            Image(
-                painter = painterResource(id = R.drawable.macbook),
-                contentDescription = "Product Image",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-            )
+    if (CTsanPham == null) {
+        // Hiển thị hiệu ứng đợi
+        Box(
+            modifier = Modifier
+                .width(120.dp)
+                .height(140.dp)
+                .shadow(8.dp, RoundedCornerShape(6.dp))
+                .background(Color.LightGray, shape = RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.Blue)
         }
+    } else {
+        // Hiển thị sản phẩm khi dữ liệu đã tải xong
+        val chiTietSanPhamJson = Uri.encode(toJson(CTsanPham))
 
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .width(120.dp)
+                .shadow(8.dp, RoundedCornerShape(6.dp))
+                .background(Color.White, shape = RoundedCornerShape(6.dp))
+                .clickable {
+                    navController.navigate(
+                        Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
+                    )
+                }
         ) {
-            // Hiển thị tên sản phẩm
+            val imageUrl = CTsanPham.idSanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = CTsanPham.idSanPham.tenSP,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(90.dp)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.macbook),
+                    contentDescription = "Product Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(90.dp)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                )
+            }
+
             Text(
                 modifier = Modifier.padding(bottom = 8.dp),
-                text = sanPham.tenSP,
+                text = CTsanPham.idSanPham.tenSP,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
-//            // Hiển thị giá sản phẩm (cần thêm thuộc tính giá vào model SanPham nếu chưa có)
-//            Text(
-//                text = "${sanPham.gia}Đ",
-//                fontSize = 13.sp,
-//                fontWeight = FontWeight.Bold,
-//                color = Color.Red,
-//                textDecoration = TextDecoration.LineThrough
-//            )
         }
     }
 }
@@ -436,75 +384,79 @@ fun NewProductItem(
 @Composable
 fun ProductItem(
     navController: NavController,
-    sanPham: SanPham,
-    viewModel: SanPhamViewModel,
+    CTsanPham: ChiTietSanPham?,
     ipAddress: String
 ) {
-    // Lấy danh sách ChiTietSanPham từ chiTietSanPhamMap theo id sản phẩm
-    val chiTietSanPhamList by viewModel.chiTietSanPhamList.observeAsState(emptyList())
+    if (CTsanPham == null) {
+        // Hiển thị hiệu ứng đợi
+        Box(
+            modifier = Modifier
+                .width(200.dp)
+                .height(180.dp)
+                .shadow(8.dp, RoundedCornerShape(6.dp))
+                .background(Color.LightGray, shape = RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.Blue)
+        }
+    } else {
+        // Hiển thị sản phẩm khi dữ liệu đã tải xong
+        val chiTietSanPhamJson = Uri.encode(toJson(CTsanPham))
 
-    // Gọi API khi màn hình được tạo
-    LaunchedEffect(sanPham._id) {
-        viewModel.fetchChiTietSanPhamOfid(sanPham._id)
-    }
-
-    // Lấy sản phẩm đầu tiên (nếu có)
-    val chiTietSanPham = chiTietSanPhamList.firstOrNull()
-    // Chuyển đổi đối tượng thành chuỗi JSON
-    val chiTietSanPhamJson = Uri.encode(toJson(chiTietSanPham ?: emptyMap<String, Any>()))
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(200.dp)
-            .padding(8.dp)
-            .shadow(8.dp, RoundedCornerShape(6.dp))
-            .background(Color.White, shape = RoundedCornerShape(6.dp))
-            .clickable {
-                navController.navigate(
-                    Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .width(200.dp)
+                .padding(8.dp)
+                .shadow(8.dp, RoundedCornerShape(6.dp))
+                .background(Color.White, shape = RoundedCornerShape(6.dp))
+                .clickable {
+                    navController.navigate(
+                        Screen.ProductDetail.route + "/${chiTietSanPhamJson}"
+                    )
+                }
+        ) {
+            val imageUrl = CTsanPham.idSanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = CTsanPham.idSanPham.tenSP,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.macbook),
+                    contentDescription = "Product Image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
                 )
             }
-    ) {
-        val imageUrl = sanPham.anhSP?.firstOrNull()?.let { "$ipAddress$it" }
-        if (imageUrl != null) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = sanPham.tenSP,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-            )
-        } else {
-            Image(
-                painter = painterResource(id = R.drawable.macbook),
-                contentDescription = "Product Image",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-            )
-        }
 
-        Text(
-            text = sanPham.tenSP,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        chiTietSanPham?.Gia?.let {
             Text(
-                text = "$it Đ",
+                text = CTsanPham.idSanPham.tenSP,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                modifier = Modifier.padding(bottom = 8.dp),
             )
+            CTsanPham.Gia?.let {
+                Text(
+                    text = "$it Đ",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
         }
     }
 }
+
 
 @Composable
 fun AnimatedDivider(

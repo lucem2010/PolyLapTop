@@ -5,6 +5,8 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import viewmodel.UserViewModel
 
 
@@ -13,7 +15,8 @@ fun PolyLapTopTheme(
     viewModel: UserViewModel,
     content: @Composable () -> Unit
 ) {
-    val colors = if (viewModel.isDarkTheme.value) {
+    val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
+    val colors = if (isDarkTheme) {
         darkColors(
             primary = Color(0xFFBB86FC),
             secondary = Color(0xFF03DAC6),
