@@ -2,7 +2,7 @@ package view
 
 
 
-import android.app.Activity
+
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -12,16 +12,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,47 +28,34 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import bottomnavigation.ScreenBottomNavigation.OrderScreen
+
 import coil.compose.AsyncImage
-import coil.compose.rememberImagePainter
+
 import com.example.polylaptop.R
-import com.example.polylaptop.zalopay.Api.CreateOrder
+
 import com.google.gson.Gson
 import com.google.gson.internal.LinkedTreeMap
 import com.google.gson.reflect.TypeToken
 import data.ApiService
-import data.RetrolfitZalop
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
 import model.AppConfig
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
+
 import model.Format
-import model.HangSP
-import model.SanPham
+
 import model.Screen
+import model.SharedPrefsManager
+import model.User
 import model.toJson
-import org.json.JSONObject
+
 import viewmodel.CartViewModel
 import viewmodel.PaymentViewModel
-import viewmodel.PaymentViewModelFactory
-import vn.zalopay.sdk.ZaloPayError
-import vn.zalopay.sdk.ZaloPaySDK
-import vn.zalopay.sdk.listeners.PayOrderListener
-import java.lang.reflect.Type
-import java.net.URLDecoder
-import java.text.NumberFormat
-import java.util.Locale
+
 
 
 @Composable
@@ -80,10 +65,11 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
     val context = LocalContext.current
     var phuongThucThanhToan by remember { mutableStateOf("") }
     var phuongThucThanhToanPayment by remember { mutableStateOf("") }
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
-    Log.d("loginInfo", "OrderDetailsScreen: $loginInfo")
-    val token = loginInfo?.token ?: ""
-    var CartViewModel: CartViewModel = viewModel()
+    val loginInfo = SharedPrefsManager.getLoginInfo(context)
+    val user = loginInfo?.first
+    val token = loginInfo?.second.toString()
+    Log.d("loginInfo", "OrderDetailsScreen: $token")
+
 //    Log.d("abc", "OrderDetailsScreen: vao day ")
 //     Giải mã JSON thành Map
     // Parse JSON thành Map với xử lý rõ ràng từng phần tử
@@ -187,7 +173,9 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
             Spacer(modifier = Modifier.height(5.dp))
 
             // Gọi các hàm để hiển thị nội dung
-            Adress() // Hiển thị địa chỉ
+            if (user != null) {
+                Adress(user)
+            } // Hiển thị địa chỉ
             Spacer(modifier = Modifier.height(10.dp))
             Detail(navController,chiTietSanPhamMap) // Hiển thị chi tiết
             Spacer(modifier = Modifier.height(10.dp))
@@ -280,7 +268,7 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
 }
 
 @Composable
-fun Adress() {
+fun Adress(user: User) {
     Spacer(modifier = Modifier.height(5.dp))
     Box(
         modifier = Modifier
@@ -309,7 +297,7 @@ fun Adress() {
                         }
                 )
                 Text(
-                    text = "Trần Ngọc Hải",
+                    text = "${user.HoTen}",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -341,7 +329,7 @@ fun Adress() {
             }
 
             Text(
-                text = "Địa chỉ nhận hàng",
+                text = "Địa chỉ nhận hàng: ${user.DiaChi}",
                 fontSize = 17.sp,
                 color = Color.Black,
                 modifier = Modifier
