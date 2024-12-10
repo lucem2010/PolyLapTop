@@ -1,5 +1,6 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ShippingOrdersScreen(
+    donHangList: List<DonHang>
 ) {
     // Giả sử bạn có một danh sách các đơn hàng đang vận chuyển
     val orders = listOf(

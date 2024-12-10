@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import data.RetrofitClient
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import model.ChiTietSanPham
 import model.SanPham
@@ -18,20 +20,17 @@ class SanPhamViewModel : ViewModel() {
     private val _sanPhamList = MutableLiveData<List<SanPham>>()
     val sanPhamList: LiveData<List<SanPham>> get() = _sanPhamList
 
-    private val _allChiTietSanPhamMap = MutableLiveData<Map<String, List<ChiTietSanPham>>>()
-    val allChiTietSanPhamMap: LiveData<Map<String, List<ChiTietSanPham>>> get() = _allChiTietSanPhamMap
+    private val _allChiTietSanPhamMap = MutableStateFlow<Map<String, List<ChiTietSanPham>>>(emptyMap())
+    val allChiTietSanPhamMap: StateFlow<Map<String, List<ChiTietSanPham>>> = _allChiTietSanPhamMap
 
     private val _chiTietSanPhamList = MutableLiveData<List<ChiTietSanPham>>()
     val chiTietSanPhamList: LiveData<List<ChiTietSanPham>> get() = _chiTietSanPhamList
 
     private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> get() = _isLoading
 
     private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> get() = _errorMessage
 
     private val _chiTietSanPhamMap = MutableLiveData<Map<String, List<ChiTietSanPham>>>()
-    val chiTietSanPhamMap: LiveData<Map<String, List<ChiTietSanPham>>> get() = _chiTietSanPhamMap
 
     private val _chitietsanphamList = MutableLiveData<List<ChiTietSanPham>>()
     val chitietsanphamList: LiveData<List<ChiTietSanPham>> get() = _chitietsanphamList
@@ -68,7 +67,7 @@ class SanPhamViewModel : ViewModel() {
                     val chiTietSanPhamResponse = response.body()
                     val chiTietSanPhamList = chiTietSanPhamResponse?.data ?: emptyList()
                     val chiTietSanPhamMap = chiTietSanPhamList.groupBy { it.idSanPham._id }
-                    _allChiTietSanPhamMap.postValue(chiTietSanPhamMap)
+                    _allChiTietSanPhamMap.value = chiTietSanPhamMap // Cập nhật StateFlow
                 } else {
                     Log.e("SanPhamViewModel", "API error: ${response.message()}")
                 }
@@ -166,9 +165,9 @@ class SanPhamViewModel : ViewModel() {
 
 
     fun getFirstChiTietList(): List<ChiTietSanPham> {
-        return _allChiTietSanPhamMap.value?.mapNotNull { (_, chiTietList) ->
+        return _allChiTietSanPhamMap.value.mapNotNull { (_, chiTietList) ->
             chiTietList.firstOrNull() // Lấy phần tử đầu tiên nếu tồn tại
-        } ?: emptyList() // Trả về danh sách rỗng nếu không có dữ liệu
+        }
     }
 
 }

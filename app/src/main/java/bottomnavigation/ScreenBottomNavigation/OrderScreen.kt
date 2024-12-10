@@ -1,6 +1,7 @@
 package bottomnavigation.ScreenBottomNavigation
 
 
+import android.util.Log
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,13 +13,16 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,13 +33,36 @@ import bottomnavigation.ScreenBottomNavigation.Order.CanceledOrderScreen
 import bottomnavigation.ScreenBottomNavigation.Order.DeliveredOrdersScreen
 import bottomnavigation.ScreenBottomNavigation.Order.PendingOrdersScreen
 import bottomnavigation.ScreenBottomNavigation.Order.ShippingOrdersScreen
+import model.SharedPrefsManager
+import viewmodel.DonHangViewModel
 import viewmodel.UserViewModel
 
 @Composable
 fun OrderScreen(
     navController: NavController,
     viewModel: UserViewModel,
+    donHangViewModel: DonHangViewModel
 ) {
+    val context = LocalContext.current
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+
+    Log.d("DonHangViewModel", "Token: $token")
+
+    LaunchedEffect(Unit) {
+        if (token != null) {
+            donHangViewModel.getDonHang(token)
+        }
+    }
+
+    val donHangList by donHangViewModel.donHangLiveData.observeAsState(emptyList())
+    // Log donHangList khi nó thay đổi
+    LaunchedEffect(donHangList) {
+        if (donHangList.isNotEmpty()) {
+            Log.d("OrderScreen", "DonHang List: ${donHangList.joinToString(", ") { it.toString() }}")
+        } else {
+            Log.d("OrderScreen", "DonHang List is empty")
+        }
+    }
 
     val tabs = listOf("Chờ xác nhận", "Đang vận chuyển", "Đã giao","Đã hủy")
     var selectedTab by remember { mutableStateOf(0) }
@@ -71,13 +98,23 @@ fun OrderScreen(
             }
         }
 
+
         // Nội dung theo tab
         when (selectedTab) {
-            0 -> PendingOrdersScreen()
-            1 -> ShippingOrdersScreen()
-            2 -> DeliveredOrdersScreen()
-            3 ->  CanceledOrderScreen()
+            0 -> PendingOrdersScreen(
+                donHangList = donHangList.filter { it.TrangThai == "Chờ duyệt" }
+            )
+            1 -> ShippingOrdersScreen(
+                donHangList = donHangList.filter { it.TrangThai == "Đang vận chuyển"}
+            )
+            2 -> DeliveredOrdersScreen(
+                donHangList = donHangList.filter { it.TrangThai == "Thành công" }
+            )
+            3 -> CanceledOrderScreen(
+                donHangList = donHangList.filter { it.TrangThai ==  "Hủy"  }
+            )
         }
+
 
         // Danh mục phụ nếu `showCategories` được bật
         if (showCategories) {
@@ -98,5 +135,6 @@ fun OrderScreenPreview() {
     OrderScreen(
         navController = rememberNavController(),
         viewModel = UserViewModel(),
+        donHangViewModel = DonHangViewModel()
     )
 }

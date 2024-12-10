@@ -1,5 +1,6 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
 
 @Composable
-fun CanceledOrderScreen() {
+fun CanceledOrderScreen(donHangList: List<DonHang>) {
     val products = listOf(
         DeliveredOrder(
             "Sản phẩm 12",

@@ -1,6 +1,8 @@
 package data
 
+import DonHang
 import model.ChiTietSanPham
+import model.DonHangCT
 import model.GioHang
 import model.HangSP
 import model.SanPham
@@ -44,10 +46,8 @@ interface ApiService {
         val data: List<GioHang>       // Danh sách các giỏ hàng
     )
 
-    data class AddToCartResponse(
-        val message: String,  // Thông điệp từ server
-        val data: GioHang?    // Dữ liệu về giỏ hàng (nếu có)
-    )
+
+
     @GET("hang")
     suspend fun getHang(): Response<model.Response<HangSP>>  // Trả về SanPhamResponse
 
@@ -129,6 +129,28 @@ interface ApiService {
         @Body request: ChangePasswordRequest // Đối tượng chứa oldPassword và newPassword
     ): Response<ApiResponse>
 
+
+    data class DonHangResponse(
+        val message: String,
+        val data: List<DonHang>
+    )
+
+    data class ChiTietDonHangResponse(
+        val message: String,
+        val data: List<DonHangCT>
+    )
+
+
+    @GET("don-hang")
+    suspend fun getDonHang(
+        @Header("Authorization") token: String
+    ): Response<DonHangResponse>
+
+
+    @GET("chi-tiet-don-hang/{id}")
+    suspend fun getChiTietDonHang(
+        @Path("id") idDonHang: String
+    ): Response<ChiTietDonHangResponse>
 
 
 }

@@ -74,7 +74,6 @@ fun HomeScreen(
 
     var currentImageIndex by remember { mutableStateOf(0) }
     var isRedAndVisible by remember { mutableStateOf(true) }
-    var firstChiTietList by remember { mutableStateOf<List<ChiTietSanPham>>(emptyList()) } // Biến toàn cục
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -83,11 +82,22 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.fetchAllChiTietSanPham()
-         firstChiTietList = viewModel.getFirstChiTietList()
+    // Quan sát dữ liệu từ StateFlow
+    val chiTietSanPhamMap by viewModel.allChiTietSanPhamMap.collectAsState()
 
+    // Lấy danh sách các sản phẩm đầu tiên từ map
+    val firstChiTietList = remember(chiTietSanPhamMap) {
+        viewModel.getFirstChiTietList()
     }
+
+    // Fetch dữ liệu khi màn hình được hiển thị
+    LaunchedEffect(Unit) {
+        while (chiTietSanPhamMap.isEmpty()) {
+            viewModel.fetchAllChiTietSanPham() // Gọi lại API mỗi 2 giây nếu chiTietSanPhamMap rỗng
+            delay(2000) // 2 giây delay
+        }
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(3000) // 3-second delay for each image
@@ -97,6 +107,7 @@ fun HomeScreen(
 
     val context = LocalContext.current
     val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+
 
 
 

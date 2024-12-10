@@ -1,5 +1,7 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,7 +31,13 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberImagePainter
 
 @Composable
-fun PendingOrdersScreen() {
+fun PendingOrdersScreen( donHangList: List<DonHang>) {
+
+    if (donHangList.isEmpty()) {
+        Log.d("PendingOrdersScreen", "DonHang List is empty")
+    } else {
+        Log.d("PendingOrdersScreen", "DonHang List: ${donHangList.joinToString(", ") { it.toString() }}")
+    }
 
     val products = listOf(
         Product(

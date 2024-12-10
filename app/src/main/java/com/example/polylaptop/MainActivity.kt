@@ -40,6 +40,7 @@ import model.Screen
 import view.AuthScreen
 import view.OrderDetailsScreen
 import view.WelcomeScreen
+import viewmodel.DonHangViewModel
 import viewmodel.UserViewModel
 import java.net.URLDecoder
 
@@ -49,14 +50,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val userViewModel: UserViewModel = viewModel()
-            MyApp(userViewModel) // Truyền ViewModel vào MyApp
+            val donViewModel: DonHangViewModel = viewModel()
+            MyApp(userViewModel,donViewModel) // Truyền ViewModel vào MyApp
         }
 
     }
 }
 
 @Composable
-fun MyApp(viewModel: UserViewModel) {
+fun MyApp(viewModel: UserViewModel,donViewModel: DonHangViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         // Màn hình chào mừng
@@ -140,7 +142,7 @@ fun MyApp(viewModel: UserViewModel) {
                     }
                     composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
                         mainNavController = navController) }
-                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController,viewModel) }
+                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController,viewModel,donViewModel) }
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(
                             bottomNavController = bottomNavController,
