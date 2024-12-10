@@ -2,7 +2,6 @@ package bottomnavigation.ScreenBottomNavigation
 
 import android.util.Log
 import androidx.compose.material3.Text
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -22,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -31,43 +29,35 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.polylaptop.R
+import model.ChiTietSanPham
 import model.HangSP
-import model.SanPham
 import viewmodel.HangViewModel
 import viewmodel.SanPhamViewModel
-
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun SearchScreen(
     navController: NavController,
     viewModel: SanPhamViewModel = viewModel(),
-    viewModelHang: HangViewModel = viewModel()
-    ) {
+    viewModelHang: HangViewModel = viewModel(),
+) {
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
     var activeBrand by remember { mutableStateOf<HangSP?>(null) }
-//    var viewModel: SanPhamViewModel = viewModel()
-    val ipAddress = "http://192.168.82.14:5000"
+    var selectedPriceRange by remember { mutableStateOf(0..200000) }
+
+    // Fetch dữ liệu từ ViewModel
     viewModel.fetchSanPham()
     viewModelHang.fetchHang()
-    val hangList by viewModelHang.hangList.observeAsState(emptyList())
+    viewModel.fetchChiTietSanPham()
+
+    // Quan sát dữ liệu từ ViewModel
     val sanPhamList by viewModel.sanPhamList.observeAsState(emptyList())
-    val chiTietSanPhamMap by viewModel.chiTietSanPhamMap.observeAsState(emptyMap())
+    val ChiTietsanPhamList by viewModel.chitietsanphamList.observeAsState(emptyList())
+    val hangList by viewModelHang.hangList.observeAsState(emptyList())
 
-    val anhlist = listOf(
-        "https://i.pinimg.com/564x/34/dd/68/34dd681c1fe679f5f40b46199e324b6b.jpg",
-        "https://i.pinimg.com/564x/9a/13/dc/9a13dc79ca4368d6c87acb2e52cadf9d.jpg",
-        "https://i.pinimg.com/736x/6a/4a/92/6a4a9250679050818495017601ae0d63.jpg"
-    )
-
-    // Dummy data
-    val products = sanPhamList
-    Log.d("SearchScreen", "List size: ${sanPhamList}")
-//        listOf(
-//        SanPham("1", HangSP("12", "mac"), "ADIDAS ULTRABOOST 21", anhlist),
-//        SanPham("2", HangSP("1dc2", "dell"), "ASUS LAPTOP ROG", anhlist),
-//        SanPham("3", HangSP("1xzc2", "as"), "MACBOOK PRO M1", anhlist),
-//    )
+    // Tìm giá trị maxPrice từ danh sách
+    val maxPrice = ChiTietsanPhamList.maxByOrNull { it.Gia }?.Gia?.takeIf { it > 0 } ?: 200000
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         // Search Bar
@@ -79,16 +69,14 @@ fun SearchScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.material.Icon(
+            Icon(
                 imageVector = Icons.Default.ArrowBackIosNew,
                 contentDescription = "Back Arrow",
                 modifier = Modifier
                     .size(28.dp)
-                    .clickable {
-                        navController.popBackStack()
-                    }
+                    .clickable { navController.popBackStack() }
             )
-            Spacer(modifier = Modifier.width(0.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             SearchBar(
                 query = searchQuery,
                 onQueryChanged = { searchQuery = it },
@@ -106,18 +94,73 @@ fun SearchScreen(
             }
         )
 
+        // Thanh trượt chọn giá
+        RangeSlider(priceMax = maxPrice.toInt()) {
+            selectedPriceRange = it
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Lọc danh sách sản phẩm dựa trên từ khóa và hãng
-        val filteredProducts = products.filter {
-            (activeBrand == null || it.idHangSP == activeBrand) && // Lọc theo hãng nếu có hãng active
-                    it.tenSP.contains(searchQuery.text, ignoreCase = true) // Lọc theo từ khóa
+        // Lọc danh sách sản phẩm dựa trên từ khóa, hãng, và giá
+        val filteredProducts = ChiTietsanPhamList.filter {
+            (activeBrand == null || it.idSanPham.idHangSP == activeBrand) &&
+                    it.idSanPham.tenSP.contains(searchQuery.text, ignoreCase = true) &&
+                    it.Gia in selectedPriceRange.start * 1000..selectedPriceRange.endInclusive * 1000
         }
 
         // Hiển thị danh sách sản phẩm
-
-        ProductList(products = filteredProducts, onProductClick = { /* Xử lý khi nhấn vào sản phẩm */ })
+        ProductList(
+            products = filteredProducts,
+            onProductClick = {  }
+        )
     }
+}
+
+@Composable
+fun RangeSlider(priceMax: Int, onRangeChange: (IntRange) -> Unit) {
+    var sliderPosition by remember { mutableStateOf(0..priceMax) }
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "Min: ${formatCurrency("${sliderPosition.start}000")}")
+            Text(text = "Max: ${formatCurrency("${sliderPosition.endInclusive}000")}")
+        }
+
+        // Sửa lỗi giá trị không hợp lệ trong RangeSlider
+        androidx.compose.material3.RangeSlider(
+            value = sliderPosition.start.toFloat()..sliderPosition.endInclusive.toFloat(),
+            valueRange = 0f..priceMax.toFloat().coerceAtLeast(200000f),
+            onValueChange = { range ->
+                sliderPosition = range.start.toInt()..range.endInclusive.toInt()
+                onRangeChange(sliderPosition) // Cập nhật giá trị khi thay đổi
+            },
+            steps = 0,
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFFFFA500),
+                activeTrackColor = Color(0xFFFFA500),
+                inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
+            )
+        )
+    }
+}
+@Composable
+fun formatCurrency(amount: String): String {
+    return try {
+        val number = amount.toLong() // Chuyển đổi chuỗi sang số
+        val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+        formatter.format(number).replace("₫", " VNĐ") // Thay ₫ thành VNĐ
+    } catch (e: NumberFormatException) {
+        "Không hợp lệ" // Xử lý nếu chuỗi không phải là số hợp lệ
+    }
+}
+
+fun getMaxPriceProduct(products: List<ChiTietSanPham>): Int? {
+    val maxPrice = products.maxOfOrNull { it.Gia } // Lấy giá lớn nhất
+    Log.d("SearchScreen", "Max product price: $maxPrice")
+    return maxPrice?.toInt() // Chuyển từ Long sang Int
 }
 
 
@@ -142,7 +185,7 @@ fun SearchBar(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding( vertical = 8.dp)
+                        .padding(vertical = 8.dp)
                         .height(50.dp)
                         .border(2.dp, Color.Gray, RoundedCornerShape(100.dp))
                         .background(Color.White, shape = RoundedCornerShape(100.dp)),
@@ -164,17 +207,19 @@ fun SearchBar(
                     }
                     Box(
                         modifier = Modifier.padding(start = 16.dp)
-                    ){
+                    ) {
                         innerTextField() // Hiển thị nội dung văn bản người dùng nhập
                     }
                 }
             }
         )
     }
-    }
-
+}
 @Composable
-fun ProductList(products: List<SanPham>, onProductClick: (SanPham) -> Unit) {
+fun ProductList(
+    products: List<ChiTietSanPham>,
+    onProductClick: (ChiTietSanPham) -> Unit
+) {
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         items(products) { product ->
             ProductItem(product = product, onClick = { onProductClick(product) })
@@ -183,9 +228,10 @@ fun ProductList(products: List<SanPham>, onProductClick: (SanPham) -> Unit) {
     }
 }
 
+
 @Composable
 fun BrandList(hangs: List<HangSP>, onProductClick: (HangSP) -> Unit) {
-    // Biến trạng thái để lưu trữ item hiện đang active
+// Biến trạng thái để lưu trữ item hiện đang active
     val (activeItem, setActiveItem) = remember { mutableStateOf<HangSP?>(null) }
 
     LazyRow(modifier = Modifier.fillMaxWidth()) {
@@ -234,7 +280,9 @@ fun BrandItem(hang: HangSP, active: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun ProductItem(
-    product: SanPham, onClick: () -> Unit) {
+    product: ChiTietSanPham,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .shadow(elevation = 1.dp)
@@ -245,7 +293,7 @@ fun ProductItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = "http://192.168.82.14:5000" + product.anhSP?.get(0),
+            model = "http://192.168.246.226:5000" + product.idSanPham.anhSP?.get(0),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -254,8 +302,11 @@ fun ProductItem(
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(text = product.tenSP, fontSize = 18.sp, color = Color.Black)
-            Text(text ="Hang: ${product.idHangSP.TenHang}" , fontSize = 15.sp, color = Color.Gray)
+            Text(text = product.idSanPham.tenSP, fontSize = 18.sp, color = Color.Black)
+            Text(text = "Hãng: ${product.idSanPham.idHangSP.TenHang}", fontSize = 15.sp, color = Color.Gray)
+
+            // Hiển thị chi tiết sản phẩm nếu có
+            Text(text = "Giá: ${formatCurrency("${product.Gia}")}", fontSize = 14.sp, color = Color.DarkGray)
         }
     }
 }

@@ -24,11 +24,18 @@ interface ApiService {
     )
 
 
+    // Define the response data class based on the structure you provided
     data class UserResponse(
         val _id: String,            // ID của người dùng
         val UserName: String,       // Tên đăng nhập của người dùng
+        val HoTen: String,          // Họ tên của người dùng
+        val Tuoi: String,           // Ngày sinh của người dùng
+        val Email: String,          // Email của người dùng
+        val Sdt: String,            // Số điện thoại của người dùng
+        val Avatar: String,         // Đường dẫn tới avatar của người dùng
+        val DiaChi: String,         // Địa chỉ của người dùng
         val Role: String,           // Vai trò của người dùng (ví dụ: 'admin', 'Khách hàng')
-        val AccessToken: String,    // Access Token sau khi đăng ký thành công
+        val AccessToken: String,    // Access Token sau khi đăng nhập thành công
         val RefeshToken: String    // Refresh Token để làm mới Access Token
     )
 
@@ -64,6 +71,7 @@ interface ApiService {
     fun registerUser(@Body user: User): Call<UserResponse>
 
 
+    // Define the login API function
     @POST("auth/login")
     suspend fun loginUser(@Body user: User): Response<UserResponse>
 

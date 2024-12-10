@@ -21,8 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
 import model.Screen
+import model.SharedPrefsManager
 import viewmodel.CartViewModel
 
 @Composable
@@ -32,13 +32,12 @@ fun CartIconWithLoginCheck(
     cartViewModel: CartViewModel
 ) {
 
-    // Lấy Context hiện tại
-    val context = LocalContext.current
 
-    // Kiểm tra trạng thái đăng nhập
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
-    val isUserLoggedIn = loginInfo != null
-    val token = loginInfo?.token ?: ""
+
+    val context = LocalContext.current
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+    val isUserLoggedIn = loggedInUser != null
+
 
     // State để quản lý dialog
     var showDialog by remember { mutableStateOf(false) }
@@ -60,11 +59,13 @@ fun CartIconWithLoginCheck(
                     else -> {
 
                         if (selectedProduct != null) {
-                            cartViewModel.addToCart(
-                                token,
-                                selectedProduct._id,
-                                context
-                            )
+                            if (token != null) {
+                                cartViewModel.addToCart(
+                                    token,
+                                    selectedProduct._id,
+                                    context
+                                )
+                            }
 //                            showAddToCartSuccessDialog = true
                         }
                     }
