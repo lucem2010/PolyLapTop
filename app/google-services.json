@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "311819424255",
+    "project_id": "polylaptop-4add9",
+    "storage_bucket": "polylaptop-4add9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311819424255:android:b86bfc6396ac9ae1b0d7ca",
+        "android_client_info": {
+          "package_name": "com.example.polylaptop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "311819424255-ir251m37fi60d4d9ful0ft2mtosouc5h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTuXyGAetYJuixTAcU_dmVweCi6cL-qsQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "311819424255-ir251m37fi60d4d9ful0ft2mtosouc5h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

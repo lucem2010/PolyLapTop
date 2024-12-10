@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -53,12 +54,20 @@ android {
 
 dependencies {
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.firebase.auth)
+    implementation ("com.google.firebase:firebase-auth-ktx:23.1.0")
+    implementation ("com.google.firebase:firebase-core:21.1.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation ("com.googlecode.libphonenumber:libphonenumber:8.12.39")
     val sheetsVersion = "1.1.1"
     implementation ("androidx.security:security-crypto:1.0.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0")
     implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.4.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation ("androidx.compose.runtime:runtime-livedata:1.6.0")
     implementation ("androidx.compose.material:material-icons-extended:1.5.1") // Phiên bản phù hợp với Compose
     implementation ("androidx.compose.ui:ui:1.5.1")
     implementation ("androidx.compose.material:material:1.5.1")

@@ -49,9 +49,9 @@ import com.example.polylaptop.R
 import kotlinx.coroutines.delay
 import model.AppConfig
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
 import model.SanPham
 import model.Screen
+import model.SharedPrefsManager
 import model.toJson
 import viewmodel.SanPhamViewModel
 
@@ -95,10 +95,7 @@ fun HomeScreen(
     }
 
     val context = LocalContext.current
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
-
-// Truy xuất các thuộc tính từ đối tượng `LoginInfo`
-    val token = loginInfo.token
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
 
     Box(
         modifier = Modifier

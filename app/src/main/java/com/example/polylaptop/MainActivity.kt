@@ -34,7 +34,8 @@ import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.SearchScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau
-import bottomnavigation.ScreenBottomNavigation.Setting.DoiMatKhau1
+import bottomnavigation.ScreenBottomNavigation.Setting.OtpScreen
+import bottomnavigation.ScreenBottomNavigation.Setting.QuenMatKhauScreen
 import bottomnavigation.ScreenBottomNavigation.Setting.ThongTinCaNhan
 import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import model.Screen
@@ -108,14 +109,16 @@ fun MyApp(viewModel: UserViewModel) {
             ) {
             SearchScreen(navController)
         }
+        composable(Screen.QuenMatKhauScreen.route) {
+            QuenMatKhauScreen(navController)
+        }
+        composable("otp_screen") { OtpScreen() }
 
         composable(Screen.DoiMatKhau.route) {
-            DoiMatKhau(navController)
+            DoiMatKhau(navController,viewModel)
         }
 
-        composable(Screen.DoiMatKhau1.route) {
-            DoiMatKhau1(navController)
-        }
+
 
         composable(Screen.ThongTinCaNhan.route) {
             ThongTinCaNhan(navController,viewModel)
@@ -143,7 +146,7 @@ fun MyApp(viewModel: UserViewModel) {
                     }
                     composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
                         mainNavController = navController) }
-                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController) }
+                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController,viewModel) }
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(
                             bottomNavController = bottomNavController,

@@ -6,6 +6,7 @@ import model.HangSP
 import model.SanPham
 import model.SanPhamResponse
 import model.User
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -13,8 +14,10 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface ApiService {
@@ -24,11 +27,18 @@ interface ApiService {
     )
 
 
+    // Define the response data class based on the structure you provided
     data class UserResponse(
         val _id: String,            // ID của người dùng
         val UserName: String,       // Tên đăng nhập của người dùng
+        val HoTen: String,          // Họ tên của người dùng
+        val Tuoi: String,           // Ngày sinh của người dùng
+        val Email: String,          // Email của người dùng
+        val Sdt: String,            // Số điện thoại của người dùng
+        val Avatar: String,         // Đường dẫn tới avatar của người dùng
+        val DiaChi: String,         // Địa chỉ của người dùng
         val Role: String,           // Vai trò của người dùng (ví dụ: 'admin', 'Khách hàng')
-        val AccessToken: String,    // Access Token sau khi đăng ký thành công
+        val AccessToken: String,    // Access Token sau khi đăng nhập thành công
         val RefeshToken: String    // Refresh Token để làm mới Access Token
     )
 
@@ -41,6 +51,7 @@ interface ApiService {
         val message: String,  // Thông điệp từ server
         val data: GioHang?    // Dữ liệu về giỏ hàng (nếu có)
     )
+
     @GET("hang")
     suspend fun getHang(): Response<model.Response<HangSP>>  // Trả về SanPhamResponse
 
@@ -64,9 +75,22 @@ interface ApiService {
     fun registerUser(@Body user: User): Call<UserResponse>
 
 
+    // Define the login API function
     @POST("auth/login")
     suspend fun loginUser(@Body user: User): Response<UserResponse>
 
+    @Multipart
+    @PUT("auth/upload-avatar")
+    suspend fun uploadAvatar(
+        @Header("Authorization") token: String,
+        @Part avatar: MultipartBody.Part
+    ): Response<UploadAvatarResponse>
+
+    // Data class for the API response
+    data class UploadAvatarResponse(
+        val message: String,
+        val data: String? // URL of the uploaded avatar
+    )
 
     @PUT("auth/user")
     suspend fun updateUser(
@@ -84,7 +108,6 @@ interface ApiService {
     suspend fun getCartItems(
         @Header("Authorization") token: String
     ): Response<GioHangResponse>
-
 
 
     @POST("gio-hang")
@@ -120,7 +143,6 @@ interface ApiService {
         @Header("Authorization") token: String, // Token Bearer cho xác thực
         @Body request: ChangePasswordRequest // Đối tượng chứa oldPassword và newPassword
     ): Response<ApiResponse>
-
 
 
 }

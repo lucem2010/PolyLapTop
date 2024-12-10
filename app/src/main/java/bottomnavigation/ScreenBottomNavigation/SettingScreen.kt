@@ -1,5 +1,6 @@
 package bottomnavigation.ScreenBottomNavigation
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -46,9 +48,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
-import model.EncryptedPrefsManager
 import model.Screen
+import model.SharedPrefsManager
 import viewmodel.UserViewModel
 
 @Composable
@@ -57,16 +60,10 @@ fun SettingScreen(
     mainNavController: NavController,
     viewModel: UserViewModel = viewModel()
 ) {
-
     val context = LocalContext.current
     var showLogoutDialog by remember { mutableStateOf(false) }
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
-
-// Truy xuất các thuộc tính từ đối tượng `LoginInfo`
-    val userId = loginInfo.userId
-    val username = loginInfo.username
-    val password = loginInfo.password
-    val token = loginInfo.token
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+    Log.d("LoginInfo", "loggedInUser: $loggedInUser")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -78,29 +75,46 @@ fun SettingScreen(
                 .fillMaxWidth()
                 .padding(top = 70.dp, start = 30.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.img1),
-                contentDescription = "Profile Image",
-                modifier = Modifier.size(70.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(20.dp))
-            Column(
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "hainguyen",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.padding(top = 15.dp)
-                )
-                Text(
-                    text = "hainguyen@gmail.com",
-                    fontSize = 15.sp,
-                    color = Color.Black,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 15.dp)
-                )
+            val avatar = loggedInUser?.Avatar
+            val imagePainter = if (avatar.isNullOrEmpty()) {
+                painterResource(id = R.drawable.img1) // Default image
+            } else {
+                rememberAsyncImagePainter(avatar) // Custom avatar image
+            }
+            if (loggedInUser != null) {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray)
+                ) {
+                    Image(
+                        painter = imagePainter,
+                        contentDescription = "Avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center
+                ) {
+
+                    Text(
+                        text = if (loggedInUser.HoTen.isNullOrBlank()) "Xin chào" else loggedInUser.HoTen,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 15.dp)
+                    )
+                    Text(
+                        text = if (loggedInUser.Email.isNullOrBlank()) "Poly Laptop" else loggedInUser.Email,
+                        fontSize = 15.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 10.dp, bottom = 15.dp)
+                    )
+                }
+                // Hiển thị email hoặc "Poly Laptop" nếu trống
             }
         }
         Box(
@@ -122,7 +136,6 @@ fun SettingScreen(
                     ), // Viền màu trắng với độ mờ 70%
                     shape = RoundedCornerShape(5.dp) // Đảm bảo viền có cùng bo góc
                 ),
-
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -134,9 +147,7 @@ fun SettingScreen(
                     mainNavController.navigate(Screen.ThongTinCaNhan.route)
                 }
             )
-
             DividerLine()
-
             // Layout Đổi mật khẩu
             SettingItem(
                 iconResId = R.drawable.changepassword3,
@@ -162,10 +173,7 @@ fun SettingScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-
             DividerLine()
-
             // Layout Lịch sử mua hàng
             SettingItem(
                 iconResId = R.drawable.shopping1,
@@ -199,12 +207,8 @@ fun SettingScreen(
                     mainNavController.navigate("troGiupVaHoTro")
                 }
             )
-
             DividerLine()
-
-
         }
-
         val isChecked = remember { mutableStateOf(false) }
         Column(
             modifier = Modifier
@@ -306,23 +310,8 @@ fun SettingScreen(
                     confirmButton = {
                         TextButton(onClick = {
 //                            // Gọi hàm logout
-                            EncryptedPrefsManager.logoutUser(context)
-                            if (token != null) {
-                                viewModel.logoutUser(
-                                    token = token,
-                                    onSuccess = { message ->
-                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        // Điều hướng đến màn hình Auth
-                                        mainNavController.navigate(Screen.Auth.route)
-                                        showLogoutDialog = false
-                                    },
-                                    onError = { errorMessage ->
-                                        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT)
-                                            .show()
-                                    }
-                                )
-                            }
-
+                            SharedPrefsManager.logoutUser(context)
+                            mainNavController.navigate(Screen.Auth.route)
                         }) {
                             Text("Có", color = Color.Red)
                         }
@@ -337,9 +326,6 @@ fun SettingScreen(
                 )
             }
         }
-
-
-
         Spacer(modifier = Modifier.width(30.dp))
     }
 }

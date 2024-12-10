@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.polylaptop" />
+                  <option name="mobileSdkAppId" value="1:311819424255:android:b86bfc6396ac9ae1b0d7ca" />
+                  <option name="projectId" value="polylaptop-4add9" />
+                  <option name="projectNumber" value="311819424255" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

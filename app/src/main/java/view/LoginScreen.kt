@@ -34,8 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import model.EncryptedPrefsManager
 import model.Screen
+import model.SharedPrefsManager
 import viewmodel.UserViewModel
 
 @Composable
@@ -48,20 +48,6 @@ fun LoginScreen(viewModel: UserViewModel = viewModel(), navController: NavContro
 
     val context = LocalContext.current
 
-    // Lắng nghe các thay đổi trong trạng thái của ViewModel
-    val onSuccess: (String, String, String, String) -> Unit = { message, accessToken, refreshToken, userId ->
-        // Lưu thông tin đăng nhập vào SharedPreferences
-        EncryptedPrefsManager.saveLoginInfo(context, userId, username, password,accessToken)
-        // Xử lý thành công, điều hướng về màn hình trước
-        Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-        navController.popBackStack() // Trở lại màn hình trước
-    }
-
-    val onError: (String) -> Unit = { error ->
-        // Hiển thị thông báo lỗi
-        errorMessage = error
-        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-    }
 
     Card(
         modifier = Modifier
@@ -126,14 +112,12 @@ fun LoginScreen(viewModel: UserViewModel = viewModel(), navController: NavContro
                     isLoading = true
                     viewModel.loginUser(
                         username, password,
-                        onSuccess = { message, accessToken, refreshToken, userId ->
+                        onSuccess = { message, loggedInUser, accessToken, refreshToken ->
                             // Lưu thông tin đăng nhập vào EncryptedPrefs
-                            EncryptedPrefsManager.saveLoginInfo(
+                            SharedPrefsManager.saveLoginInfo(
                                 context,
-                                userId,
-                                username,
-                                password,
-                                accessToken // Lưu accessToken vào token
+                                loggedInUser, // Save the entire User object
+                                accessToken   // Save the access token
                             )
 
                             // Chuyển đến màn hình chính hoặc bất kỳ màn hình nào bạn muốn

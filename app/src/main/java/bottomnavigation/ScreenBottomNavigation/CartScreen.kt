@@ -38,11 +38,11 @@ import com.example.polylaptop.R
 import com.google.gson.Gson
 import model.AppConfig
 import model.ChiTietSanPham
-import model.EncryptedPrefsManager
 import model.Format
 import model.GioHang
 import model.SanPham
 import model.Screen
+import model.SharedPrefsManager
 import model.toJson
 import viewmodel.CartViewModel
 import java.net.URLEncoder
@@ -51,10 +51,9 @@ import java.net.URLEncoder
 fun CartScreen( bottomNavController: NavController,
                 mainNavController: NavController,) {
     val context = LocalContext.current
-    val loginInfo = EncryptedPrefsManager.getLoginInfo(context)
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
     val ipAddress =  AppConfig.ipAddress
 
-    val token = loginInfo.token
 
     // Khởi tạo ViewModel
     val cartViewModel: CartViewModel = viewModel()
