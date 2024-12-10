@@ -68,7 +68,7 @@ fun OrderDetailsScreen(navController: NavController, chiTietSanPhamJson: String?
     val loginInfo = SharedPrefsManager.getLoginInfo(context)
     val user = loginInfo?.first
     val token = loginInfo?.second.toString()
-    Log.d("loginInfo", "OrderDetailsScreen: $token")
+//    Log.d("loginInfo", "OrderDetailsScreen: $token")
 
 //    Log.d("abc", "OrderDetailsScreen: vao day ")
 //     Giải mã JSON thành Map

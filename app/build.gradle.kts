@@ -76,6 +76,8 @@ dependencies {
     implementation ("androidx.compose.animation:animation:1.5.0")  // Cập nhật lên phiên bản mới nhất nếu cần
     implementation("com.squareup.okhttp3:okhttp:4.6.0")
     implementation("commons-codec:commons-codec:1.14")
+    implementation ("io.socket:socket.io-client:2.1.0")
+
 
 
     implementation(libs.androidx.core.ktx)

@@ -3,34 +3,28 @@ package viewmodel
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+
 import android.widget.Toast
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.polylaptop.zalopay.Api.CreateOrder
-import com.google.androidbrowserhelper.playbilling.provider.PaymentResult
+
 
 import data.ApiService
 import data.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import model.ChiTietSanPham
+
 import org.json.JSONObject
 import vn.zalopay.sdk.ZaloPayError
 import vn.zalopay.sdk.ZaloPaySDK
 import vn.zalopay.sdk.listeners.PayOrderListener
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
+
 
 class PaymentViewModel: ViewModel() {
-//    private val _paymentResult = MutableLiveData<String?>()
-//    val paymentResult: LiveData<String?> get() = _paymentResult
+
     private val apiService = RetrofitClient.apiService
 
     fun createOrder(amount: String, callback: (String?) -> Unit) {

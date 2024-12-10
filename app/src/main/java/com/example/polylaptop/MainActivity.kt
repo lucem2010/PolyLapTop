@@ -42,8 +42,10 @@ import bottomnavigation.ScreenBottomNavigation.SettingScreen
 import data.ApiService
 import model.Screen
 import view.AuthScreen
+import view.ChatScreen
 import view.OrderDetailsScreen
 import view.WelcomeScreen
+import viewmodel.ChatViewModel
 import viewmodel.PaymentViewModel
 import viewmodel.UserViewModel
 import vn.zalopay.sdk.Environment
@@ -52,12 +54,12 @@ import java.net.URLDecoder
 
 class MainActivity : ComponentActivity() {
     private lateinit var paymentViewModel: PaymentViewModel
-
+    private lateinit var chatViewModel :ChatViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Khởi tạo ViewModel
         paymentViewModel = ViewModelProvider(this)[PaymentViewModel::class.java]
-
+        chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
         // khởi tạo zalopay
         ZaloPaySDK.init(553, Environment.SANDBOX)
 
@@ -65,7 +67,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             val userViewModel: UserViewModel = viewModel()
-            MyApp(userViewModel,paymentViewModel) // Truyền ViewModel vào MyApp
+            MyApp(userViewModel,paymentViewModel,chatViewModel) // Truyền ViewModel vào MyApp
         }
 
     }
@@ -86,7 +88,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel) {
+fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel,chatViewModel: ChatViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         // Màn hình chào mừng
@@ -95,7 +97,9 @@ fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel) {
                 navController.navigate(Screen.BottomNav.route)
             })
         }
-
+        composable(route = Screen.ChatScreen.route){
+            ChatScreen(navController,chatViewModel)
+        }
         composable(
             route = Screen.ProductDetail.route + "/{chiTietSanPhamJson}",
             arguments = listOf(
@@ -121,14 +125,12 @@ fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel) {
                 Log.e("OrderDetailsScreen", "Error decoding JSON: ${e.message}")
                 null
             }
-
             OrderDetailsScreen(
                 navController = navController,
                 chiTietSanPhamJson = decodedJson,
                 viewModel = paymentViewModel
             )
         }
-
         composable(
             Screen.SearchScreen.route,
             enterTransition = {

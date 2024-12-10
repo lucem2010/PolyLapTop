@@ -233,7 +233,7 @@ fun HeaderSection(imgLogo: String, mainNavController: NavController, token: Any?
             Icon(
                 imageVector = Icons.Default.Email, // Icon mặc định hoặc tùy chỉnh
                 contentDescription = "Email Icon",
-                modifier = Modifier.size(35.dp),
+                modifier = Modifier.size(35.dp).clickable { mainNavController.navigate(Screen.ChatScreen.route) },
                 tint = Color.White
             )
         }

@@ -3,8 +3,10 @@ package data
 import model.ChiTietSanPham
 import model.GioHang
 import model.HangSP
+import model.Message
 import model.SanPham
 import model.SanPhamResponse
+import model.Sender
 import model.User
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -148,6 +150,42 @@ interface ApiService {
         @Body request: ThanhToanRequest
     ): Response<DonHangResponse>
 
+    data class SendMessageRequest(
+        val chatId: String,
+        val content: String
+    )
+
+    data class MessageResponse(
+        val success: Boolean,
+        val message: String,
+        val data: Message
+    )
+
+    @POST("/chat/send-message")
+    suspend fun sendMessage(
+        @Body request: SendMessageRequest,
+        @Header("Authorization") token: String
+    ): Response<MessageResponse>
+
+
+    data class ChatResponse(
+        val message: String,
+        val data: ChatData
+    )
+
+    data class ChatData(
+        val messages: List<Message>,
+        val chat: Chat
+    )
+    data class Chat(
+        val _id: String,
+        val participants: List<Sender>,
+        val lastMessage: String,
+        val updatedAt: String,
+        val __v: Int
+    )
+    @POST("/chat/contact")
+    suspend fun contactMessage(@Header("Authorization") token:String): Response<ChatResponse>
 
 
 }
