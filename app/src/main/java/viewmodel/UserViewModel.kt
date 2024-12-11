@@ -2,6 +2,7 @@ package viewmodel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -9,7 +10,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
 import data.ApiService
 import data.RetrofitClient
 import kotlinx.coroutines.Dispatchers
@@ -75,50 +75,68 @@ class UserViewModel : ViewModel() {
 
     // Phương thức để tải lên avatar
     fun uploadAvatar(
-        token: String,
-        avatarFile: File,
         context: Context,
+        token: String,
+        avatarUri: Uri?,
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
-        viewModelScope.launch {
-            try {
-                // Log the start of the upload process
-                Log.d("UploadAvatar", "Starting upload for file: ${avatarFile.name}")
-
-                // Prepare the request body
-                val requestBody = avatarFile.asRequestBody("image/*".toMediaTypeOrNull())
-                val multipartFile = MultipartBody.Part.createFormData("avatar", avatarFile.name, requestBody)
-
-                // Gửi yêu cầu upload
-                val response = RetrofitClient.apiService.uploadAvatar("Bearer $token", multipartFile)
-
-                // Kiểm tra phản hồi từ server
-                if (response.isSuccessful) {
-                    val avatarUrl = response.body()?.data
-                    Log.d("UploadAvatar", "Upload success: $avatarUrl")
-
-                    // Nếu có URL avatar mới
-                    if (avatarUrl != null) {
-                        SharedPrefsManager.saveAvatarUrl(context, avatarUrl)
-                        onSuccess(avatarUrl)
-                    } else {
-                        Log.e("UploadAvatar", "Avatar URL is null.")
-                        onError("Không lấy được URL ảnh.")
-                    }
-                } else {
-                    // Nếu không thành công, log thêm thông tin lỗi
-                    val error = response.errorBody()?.string() ?: "Lỗi không xác định"
-                    Log.e("UploadAvatar", "Upload failed: $error")
-                    onError("Lỗi từ server: $error")
-                }
-            } catch (e: Exception) {
-                // Log and trigger error callback for exceptions
-                Log.e("UploadAvatar", "Exception during upload: ${e.message}")
-                onError(e.message ?: "Unknown exception")
+        avatarUri?.let { uri ->
+            // Kiểm tra URI hợp lệ
+            if (uri.scheme != "content" && uri.scheme != "file") {
+                onError("Uri avatar không hợp lệ hoặc không được hỗ trợ.")
+                return
             }
+
+            // Chuyển đổi Uri thành File
+            val avatarFile = SharedPrefsManager.uriToFile(context, uri)
+            avatarFile?.let { file ->
+                // Kiểm tra kích thước file
+                if (file.length() > 5 * 1024 * 1024) { // Giới hạn 5MB
+                    onError("File quá lớn. Vui lòng chọn file nhỏ hơn 5MB.")
+                    return
+                }
+
+                viewModelScope.launch {
+                    try {
+                        Log.d("UploadAvatar", "Starting upload for file: ${file.name}")
+
+                        // Chuẩn bị request body
+                        val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+                        val multipartFile =
+                            MultipartBody.Part.createFormData("avatar", file.name, requestBody)
+
+                        // Gửi yêu cầu upload
+                        val response = RetrofitClient.apiService.uploadAvatar("Bearer $token", multipartFile)
+
+                        if (response.isSuccessful) {
+                            val avatarUrl = response.body()?.data
+                            Log.d("UploadAvatar", "Upload success: $avatarUrl")
+
+                            if (avatarUrl != null) {
+                                onSuccess(avatarUrl)
+                            } else {
+                                onError("Không lấy được URL ảnh.")
+                            }
+                        } else {
+                            val error = response.errorBody()?.string() ?: "Lỗi không xác định"
+                            Log.e("UploadAvatar", "Upload failed: $error")
+                            onError("Lỗi từ server: $error")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("UploadAvatar", "Exception during upload: ${e.message}")
+                        onError(e.message ?: "Unknown exception")
+                    }
+                }
+            } ?: run {
+                onError("Không thể chuyển đổi Uri thành File.")
+            }
+        } ?: run {
+            onError("Uri avatar không hợp lệ.")
         }
     }
+
+
     // Hàm đăng ký người dùng
     fun registerUser(user: User, onSuccess: (String, String) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -274,18 +292,30 @@ class UserViewModel : ViewModel() {
     // Lấy giá trị theme từ EncryptedPrefsManager khi ViewModel được khởi tạo
     val isDarkTheme: LiveData<Boolean> get() = _isDarkTheme
 
-    fun sendPasswordResetEmail(email: String, onComplete: (Boolean) -> Unit) {
-        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Gửi email thành công
-                    Log.d("PasswordReset", "Email đã được gửi thành công.")
-                    onComplete(true)
+    // Hàm upload avatar
+    fun uploadAvatar(token: String, filePath: String, onResult: (Boolean, String?) -> Unit) {
+        // Tạo MultipartBody.Part từ file hình ảnh
+        val file = File(filePath)
+        val requestBody = RequestBody.create("image/*".toMediaTypeOrNull(), file)
+        val avatarPart = MultipartBody.Part.createFormData("avatar", file.name, requestBody)
+
+        // Sử dụng viewModelScope để chạy Coroutine
+        viewModelScope.launch {
+            try {
+                // Gửi yêu cầu đến API
+                val response = RetrofitClient.apiService.uploadAvatar("Bearer $token", avatarPart)
+                if (response.isSuccessful) {
+                    val message = response.body()?.message ?: "Thành công"
+                    val avatarUrl = response.body()?.data
+                    onResult(true, avatarUrl) // Trả về kết quả thành công
                 } else {
-                    // Gửi email thất bại
-                    Log.e("PasswordReset", "Lỗi gửi email: ${task.exception?.message}")
-                    onComplete(false)
+                    val error = response.errorBody()?.string() ?: "Có lỗi xảy ra"
+                    onResult(false, error) // Trả về lỗi
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(false, e.message) // Trả về lỗi ngoại lệ
             }
+        }
     }
 }

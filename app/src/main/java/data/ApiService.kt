@@ -79,18 +79,6 @@ interface ApiService {
     @POST("auth/login")
     suspend fun loginUser(@Body user: User): Response<UserResponse>
 
-    @Multipart
-    @PUT("auth/upload-avatar")
-    suspend fun uploadAvatar(
-        @Header("Authorization") token: String,
-        @Part avatar: MultipartBody.Part
-    ): Response<UploadAvatarResponse>
-
-    // Data class for the API response
-    data class UploadAvatarResponse(
-        val message: String,
-        val data: String? // URL of the uploaded avatar
-    )
 
     @PUT("auth/user")
     suspend fun updateUser(
@@ -143,6 +131,20 @@ interface ApiService {
         @Header("Authorization") token: String, // Token Bearer cho xác thực
         @Body request: ChangePasswordRequest // Đối tượng chứa oldPassword và newPassword
     ): Response<ApiResponse>
+
+
+    data class UploadAvatarResponse(
+        val message: String,
+        val data: String // Đường dẫn tới avatar trả về
+    )
+
+
+    @Multipart
+    @PUT("auth/upload-avatar")  // Thay @POST thành @PUT
+    suspend fun uploadAvatar(
+        @Header("Authorization") token: String, // Token xác thực
+        @Part avatar: MultipartBody.Part // File hình ảnh
+    ): Response<UploadAvatarResponse> // Response trả về
 
 
 }

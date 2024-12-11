@@ -48,8 +48,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.polylaptop.R
+import model.AppConfig
 import model.Screen
 import model.SharedPrefsManager
 import viewmodel.UserViewModel
@@ -75,11 +77,18 @@ fun SettingScreen(
                 .fillMaxWidth()
                 .padding(top = 70.dp, start = 30.dp)
         ) {
-            val avatar = loggedInUser?.Avatar
-            val imagePainter = if (avatar.isNullOrEmpty()) {
-                painterResource(id = R.drawable.img1) // Default image
+            val avatarUrl = loggedInUser?.Avatar // Lấy đường dẫn avatar từ đối tượng người dùng
+
+// Lấy địa chỉ IP của máy chủ
+            val ipAddress = AppConfig.ipAddress  // Địa chỉ IP từ AppConfig
+
+// Tạo URL đầy đủ cho avatar
+            val fullAvatarUrl = if (avatarUrl != null && avatarUrl.isNotEmpty()) {
+                // Nếu có avatarUrl, kết hợp với địa chỉ IP hoặc URL
+                "$ipAddress$avatarUrl" // Kết hợp địa chỉ IP và đường dẫn avatar
             } else {
-                rememberAsyncImagePainter(avatar) // Custom avatar image
+                // Nếu không có avatarUrl, dùng ảnh mặc định
+                null
             }
             if (loggedInUser != null) {
                 Box(
@@ -88,11 +97,14 @@ fun SettingScreen(
                         .clip(CircleShape)
                         .background(Color.Gray)
                 ) {
-                    Image(
-                        painter = imagePainter,
-                        contentDescription = "Avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                    AsyncImage(
+                        model = fullAvatarUrl ?: R.drawable.img1, // Nếu fullAvatarUrl là null, sử dụng ảnh mặc định
+                        contentDescription = "User Avatar", // Mô tả cho hình ảnh
+                        contentScale = ContentScale.Crop, // Cắt ảnh cho phù hợp với vùng hiển thị
+                        modifier = Modifier
+                            .size(150.dp)
+                            .clip(CircleShape) // Định dạng ảnh tròn
+                            .background(Color.Gray), // Màu nền khi ảnh chưa tải xong
                     )
                 }
                 Spacer(modifier = Modifier.width(20.dp))

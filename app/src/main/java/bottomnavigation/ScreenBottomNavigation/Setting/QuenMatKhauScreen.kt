@@ -182,49 +182,49 @@ fun QuenMatKhauScreen(navController: NavController, viewModel: UserViewModel = v
 
 
                 // Button gửi mã OTP
-                Button(
-                    onClick = {
-                        isLoading = true
-                        viewModel.sendPasswordResetEmail(email) { success ->
-                            isLoading = false
-                            isEmailSent = success
-                            if (success) {
-                                Toast.makeText(context, "Email đã được gửi!", Toast.LENGTH_SHORT)
-                                    .show()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Có lỗi xảy ra, vui lòng thử lại.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF8774A)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp),
-                    contentPadding = PaddingValues(vertical = 14.dp),
-                    elevation = ButtonDefaults.elevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 2.dp
-                    ),
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "Gửi email",
-                            fontFamily = FontFamily.Monospace,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+//                Button(
+//                    onClick = {
+//                        isLoading = true
+//                        viewModel.sendPasswordResetEmail(email) { success ->
+//                            isLoading = false
+//                            isEmailSent = success
+//                            if (success) {
+//                                Toast.makeText(context, "Email đã được gửi!", Toast.LENGTH_SHORT)
+//                                    .show()
+//                            } else {
+//                                Toast.makeText(
+//                                    context,
+//                                    "Có lỗi xảy ra, vui lòng thử lại.",
+//                                    Toast.LENGTH_SHORT
+//                                ).show()
+//                            }
+//                        }
+//                    },
+//                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF8774A)),
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(top = 20.dp),
+//                    contentPadding = PaddingValues(vertical = 14.dp),
+//                    elevation = ButtonDefaults.elevation(
+//                        defaultElevation = 0.dp,
+//                        pressedElevation = 2.dp
+//                    ),
+//                ) {
+//                    if (isLoading) {
+//                        CircularProgressIndicator(
+//                            color = Color.White,
+//                            modifier = Modifier.size(24.dp)
+//                        )
+//                    } else {
+//                        Text(
+//                            text = "Gửi email",
+//                            fontFamily = FontFamily.Monospace,
+//                            color = Color.White,
+//                            fontSize = 14.sp,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                    }
+//                }
             }
         }
     }

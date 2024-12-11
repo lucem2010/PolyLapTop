@@ -72,9 +72,11 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import com.example.polylaptop.R
+import model.AppConfig
 import model.District
 import model.Province
 import model.SharedPrefsManager
@@ -186,8 +188,6 @@ fun ProfileCard(
     var diaChiTiet by remember { mutableStateOf(loggedInUser.DiaChi ?: "") }
 
     var avatarUri by remember { mutableStateOf<Uri?>(null) }
-    val imageBitmap = remember { mutableStateOf<ImageBitmap?>(null) }
-    var isImageUpdated by remember { mutableStateOf(false) }
 
     // Các biến lưu trữ thông tin Tỉnh, Quận, Phường
     var selectedProvince by remember { mutableStateOf<Province?>(null) }
@@ -202,13 +202,6 @@ fun ProfileCard(
     val districts by viewModelLocation.districts.collectAsState()
     val wards by viewModelLocation.wards.collectAsState()
 
-    // Lấy avatar từ SharedPreferences nếu có
-    LaunchedEffect(Unit) {
-        val savedAvatarUrl = SharedPrefsManager.getAvatarUrl(context)
-        if (!savedAvatarUrl.isNullOrEmpty()) {
-            avatarUri = Uri.parse(savedAvatarUrl)
-        }
-    }
 
     LaunchedEffect(selectedProvince) {
         selectedDistrict = null
@@ -254,23 +247,67 @@ fun ProfileCard(
         viewModelLocation.updateSelectedWard(wardName)
     }
 
+
     val galleryLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             uri?.let {
+                val contentResolver = context.contentResolver
+                val mimeType = contentResolver.getType(it)
+
+                // Kiểm tra MIME type
+                if (mimeType == null || !mimeType.startsWith("image/")) {
+                    Toast.makeText(context, "Vui lòng chọn file hình ảnh.", Toast.LENGTH_SHORT)
+                        .show()
+                    return@let
+                }
+
+                // Kiểm tra nếu ảnh không thay đổi
+                if (avatarUri == it) {
+                    Toast.makeText(context, "Ảnh này đã được chọn trước đó.", Toast.LENGTH_SHORT)
+                        .show()
+                    return@let
+                }
+
                 avatarUri = it
-                isImageUpdated = true  // Sửa lỗi ở đây
                 Log.d("ImageSelection", "Image selected: $it")
+
+                // Kiểm tra token
+                if (token.isBlank()) {
+                    Toast.makeText(
+                        context,
+                        "Token không hợp lệ. Vui lòng đăng nhập lại.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@let
+                }
+
+
+                viewModel.uploadAvatar(
+                    context = context,
+                    token = token,
+                    avatarUri = it,
+                    onSuccess = { avatarUrl ->
+                        Toast.makeText(
+                            context,
+                            "Tải lên thành công: $avatarUrl",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        // Log loggedInUser sau khi tải lên thành công
+                        Log.d("LoggedInUser", "LoggedInUser: $loggedInUser")
+                    },
+                    onError = { error ->
+                        Toast.makeText(context, "Lỗi tải lên: $error", Toast.LENGTH_SHORT).show()
+                    }
+                )
             } ?: run {
-                Toast.makeText(context, "No image selected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Không có hình ảnh nào được chọn", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
-    // Khi quay lại màn hình, lấy thông tin avatar và lưu lại
-    LaunchedEffect(Unit) {
-        val savedAvatarUrl = SharedPrefsManager.getAvatarUrl(context)
-        if (!savedAvatarUrl.isNullOrEmpty()) {
-            avatarUri = Uri.parse(savedAvatarUrl)
-        }
-    }
+
+
+
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
@@ -286,44 +323,36 @@ fun ProfileCard(
                 .background(Color.Gray)
                 .clickable { galleryLauncher.launch("image/*") }
         ) {
-            // Hiển thị ảnh dựa trên trạng thái
-            if (isImageUpdated) {
-                imageBitmap.value?.let { bitmap ->
-                    // Hiển thị ảnh chụp từ camera
-                    Image(
-                        bitmap = bitmap,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape)
-                            .background(backgroundColor),
-                        contentScale = ContentScale.Crop
-                    )
-                } ?: avatarUri.let { uri ->
-                    // Hiển thị ảnh từ thư viện
-                    Image(
-                        painter = rememberAsyncImagePainter(uri),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape)
-                            .background(backgroundColor),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+
+            val avatarUrl = loggedInUser.Avatar // Lấy đường dẫn avatar từ đối tượng người dùng
+
+// Lấy địa chỉ IP của máy chủ
+            val ipAddress = AppConfig.ipAddress  // Địa chỉ IP từ AppConfig
+
+// Tạo URL đầy đủ cho avatar
+            val fullAvatarUrl = if (avatarUrl != null && avatarUrl.isNotEmpty()) {
+                // Nếu có avatarUrl, kết hợp với địa chỉ IP hoặc URL
+                "$ipAddress$avatarUrl" // Kết hợp địa chỉ IP và đường dẫn avatar
             } else {
-                // Hiển thị ảnh mặc định nếu chưa thay đổi
-                Image(
-                    painter = painterResource(id = R.drawable.img1),
-                    contentDescription = "Default Profile Picture",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .border(2.dp, borderColor, CircleShape)
-                        .background(backgroundColor),
-                    contentScale = ContentScale.Crop
-                )
+                // Nếu không có avatarUrl, dùng ảnh mặc định
+                null
             }
+
+// Hiển thị hình ảnh avatar từ URL nếu có, nếu không sẽ hiển thị ảnh mặc định
+            AsyncImage(
+                model = fullAvatarUrl ?: R.drawable.img1, // Nếu fullAvatarUrl là null, sử dụng ảnh mặc định
+                contentDescription = "User Avatar", // Mô tả cho hình ảnh
+                contentScale = ContentScale.Crop, // Cắt ảnh cho phù hợp với vùng hiển thị
+                modifier = Modifier
+                    .size(150.dp)
+                    .clip(CircleShape) // Định dạng ảnh tròn
+                    .background(Color.Gray), // Màu nền khi ảnh chưa tải xong
+            )
+
+
+
+
+
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -426,71 +455,26 @@ fun ProfileCard(
                         DiaChi = "$diaChiTiet, $selectedWardName, $selectedDistrictName, $selectedProvinceName"
                     )
 
-                    avatarUri?.let { uri ->
-                        val avatarFile = uriToFile(context, uri)
-                        avatarFile?.let {
-                            // Upload avatar nếu có
-                            viewModel.uploadAvatar(
-                                context = context,
-                                avatarFile = it,
-                                token = token,
-                                onSuccess = { newAvatarUrl ->
-                                    // Cập nhật URL avatar vào người dùng
-                                    val finalUser = updatedUser.copy(Avatar = newAvatarUrl)
-                                    viewModel.updateUser(token = token,
-                                        user = finalUser,
-                                        onSuccess = {
-                                            Toast.makeText(
-                                                context,
-                                                "Thông tin đã được lưu!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                            SharedPrefsManager.saveLoginInfo(
-                                                context,
-                                                updatedUser,
-                                                token
-                                            )
-                                        },
-                                        onError = {
-                                            Toast.makeText(
-                                                context,
-                                                "Lỗi khi cập nhật thông tin người dùng.",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        })
-                                },
-                                onError = { errorMessage ->
-                                    Toast.makeText(
-                                        context,
-                                        "Tải ảnh thất bại: $errorMessage",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            )
+                    // Chỉ cập nhật người dùng
+                    viewModel.updateUser(
+                        token = token,
+                        user = updatedUser,
+                        onSuccess = {
+                            Toast.makeText(
+                                context,
+                                "Thông tin đã được lưu!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            SharedPrefsManager.saveLoginInfo(context, updatedUser, token)
+                        },
+                        onError = {
+                            Toast.makeText(
+                                context,
+                                "Lỗi khi cập nhật thông tin người dùng.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                    } ?: run {
-                        // Không có avatar mới, chỉ cập nhật người dùng
-                        viewModel.updateUser(
-                            token = token,
-                            user = updatedUser,
-                            onSuccess = {
-                                Toast.makeText(
-                                    context,
-                                    "Thông tin đã được lưu!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                SharedPrefsManager.saveLoginInfo(context, updatedUser, token)
-                            },
-                            onError = {
-                                Toast.makeText(
-                                    context,
-                                    "Lỗi khi cập nhật thông tin người dùng.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        )
-
-                    }
+                    )
                 } else {
                     Toast.makeText(context, "Vui lòng điền đầy đủ thông tin.", Toast.LENGTH_SHORT)
                         .show()
@@ -499,6 +483,7 @@ fun ProfileCard(
         ) {
             Text("Lưu")
         }
+
 //        Button(
 //            onClick = {
 //                if (fullName.isNotEmpty() && email.isNotEmpty() && phoneNumber.isNotEmpty()) {

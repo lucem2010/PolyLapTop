@@ -25,21 +25,6 @@ object SharedPrefsManager {
         return context.getSharedPreferences("my_secure_prefs", Context.MODE_PRIVATE)
     }
 
-    private const val AVATAR_URL_KEY = "avatar_url"
-    fun saveAvatarUrl(context: Context, url: String) {
-        val sharedPreferences =
-            context.getSharedPreferences("my_secure_prefs", Context.MODE_PRIVATE)
-        with(sharedPreferences.edit()) {
-            putString(AVATAR_URL_KEY, url)
-            apply()
-        }
-    }
-
-    fun getAvatarUrl(context: Context): String? {
-        val sharedPreferences =
-            context.getSharedPreferences("my_secure_prefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getString(AVATAR_URL_KEY, null)
-    }
 
         fun uriToFile(context: Context, uri: Uri): File? {
         val contentResolver = context.contentResolver
