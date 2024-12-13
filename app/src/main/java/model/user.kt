@@ -1,5 +1,6 @@
 package model
 data class User(
+    val ID: String? = null,
     val UserName: String,
     val Password: String,
     val HoTen: String? = null,     // Tùy chọn, có thể null khi đăng ký lần đầu

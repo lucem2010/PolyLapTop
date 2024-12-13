@@ -97,13 +97,14 @@ class UserViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Tạo đối tượng User
-                val user = User(username, password)
+                val user = User(UserName = username, Password=password)
 
                 // Gọi API đăng nhập
                 val response = RetrofitClient.apiService.loginUser(user)
 
                 if (response.isSuccessful) {
                     val loginResponse = response.body()
+                    Log.d("LoginResponse", "Response Body: $loginResponse")
                     loginResponse?.let {
                         // Lấy thông tin từ phản hồi
                         val accessToken = it.AccessToken
@@ -112,6 +113,7 @@ class UserViewModel : ViewModel() {
 
                         // Tạo đối tượng User từ phản hồi API
                         val loggedInUser = User(
+                            ID = it._id,
                             UserName = it.UserName,
                             Password = password, // User's password is passed here as well
                             HoTen = it.HoTen,

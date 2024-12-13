@@ -18,6 +18,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
@@ -175,12 +176,15 @@ interface ApiService {
     ): Response<Any>
 
 
+    @Multipart // Thêm @Multipart
     @POST("danh-gia/{id}")
     suspend fun taoDanhGia(
         @Path("id") donHangId: String,
+        @Part("idUser") idUser: RequestBody,
         @Header("Authorization") token: String,
         @Part("Diem") diem: RequestBody,
         @Part("NoiDung") noiDung: RequestBody,
         @Part hinhAnh: List<MultipartBody.Part> // Truyền danh sách MultipartBody.Part
     ): Response<Any>
+
 }

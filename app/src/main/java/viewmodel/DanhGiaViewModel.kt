@@ -23,6 +23,9 @@ class DanhGiaViewModel : ViewModel() {
     val errorMessage: LiveData<String> get() = _errorMessage
     private val apiService = RetrofitClient.apiService
 
+    private val _result = MutableLiveData<Boolean>()
+    val result: LiveData<Boolean> get() = _result
+
     fun fetchDanhGias(productId: String) {
         viewModelScope.launch {
             try {
@@ -51,19 +54,22 @@ class DanhGiaViewModel : ViewModel() {
 
     fun taoDanhGia(
         donHangId: String,
+        idUser: String,
         token: String,
         diem: String,
         noiDung: String,
         hinhAnhFiles: List<File>
-    ) {
+    ){
         viewModelScope.launch {
             try {
+                val idUserBody = createRequestBody(idUser)
                 val diemBody = createRequestBody(diem)
                 val noiDungBody = createRequestBody(noiDung)
                 val hinhAnhParts = createMultipartBodyList(hinhAnhFiles)
 
                 val response = apiService.taoDanhGia(
                     donHangId = donHangId,
+                    idUser = idUserBody,
                     token = "Bearer $token",
                     diem = diemBody,
                     noiDung = noiDungBody,
@@ -71,11 +77,14 @@ class DanhGiaViewModel : ViewModel() {
                 )
 
                 if (response.isSuccessful) {
-                    Log.d("TaoDanhGia", "Đánh giá thành công!")
+                    _result.postValue(true)
+                    Log.d("TaoDanhGia", "Đánh giá thành công")
                 } else {
+                    _result.postValue(false)
                     Log.e("TaoDanhGia", "Thất bại: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
+                _result.postValue(false)
                 Log.e("TaoDanhGia", "Lỗi: ${e.message}")
             }
         }

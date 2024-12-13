@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,6 +31,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,11 +49,14 @@ import androidx.core.net.toFile
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
+import model.Screen
 import model.SharedPrefsManager
 import viewmodel.DanhGiaViewModel
 import viewmodel.SanPhamViewModel
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.lang.Boolean
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -63,6 +68,8 @@ fun DanhgiaScreenBasic(
     val navBackStackEntry = mainNavController.currentBackStackEntry
     val encodedId = navBackStackEntry?.arguments?.getString("id") ?: ""
     val donHangId = Uri.decode(encodedId) // Giải mã giá trị
+
+    val result by viewModel.result.observeAsState()
 
     var selectedImagesUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val context = LocalContext.current
@@ -93,7 +100,9 @@ fun DanhgiaScreenBasic(
     var expanded by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("") }
 
+
     val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+
     Column(modifier = Modifier.fillMaxSize()) {
         Header(
             title = "Đánh Giá",
@@ -213,25 +222,51 @@ fun DanhgiaScreenBasic(
                 onConfirmClick = {
                     // Convert selected images URIs to File objects
                     val imageFiles = selectedImagesUris.mapNotNull { uri ->
-                        uri.toFile()  // You need a function to convert Uri to File
+                        uriToFile(context, uri)  // Chuyển đổi Uri thành File
                     }
-
                     // Call taoDanhGia with necessary parameters
                     if (token != null) {
                         viewModel.taoDanhGia(
                             donHangId = donHangId,
+                            idUser = loggedInUser?.ID ?: "",
                             token = token,
                             diem = selectedRating.toString(),
                             noiDung = text,
                             hinhAnhFiles = imageFiles
                         )
+                        Log.d("IDDDD", "Selected URI: $loggedInUser")
+                    }
+
+                    // Quan sát kết quả và hiển thị thông báo sau khi nhận kết quả
+                    result?.let {
+                        if (it) {
+                            Toast.makeText(context, "Đánh giá thành công!", Toast.LENGTH_SHORT).show()
+                            mainNavController.navigate(Screen.BottomNav.route)
+                        } else {
+                            Toast.makeText(context, "Đánh giá thất bại!", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             )
+
         }
     }
 }
-
+fun uriToFile(context: Context, uri: Uri): File? {
+    val fileName = "temp_image_${System.currentTimeMillis()}.jpg"
+    val tempFile = File(context.cacheDir, fileName)
+    try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val outputStream = FileOutputStream(tempFile)
+        inputStream.copyTo(outputStream)
+        inputStream.close()
+        outputStream.close()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+    return tempFile
+}
 
 
 fun createImageFileUri(context: Context): Uri? {

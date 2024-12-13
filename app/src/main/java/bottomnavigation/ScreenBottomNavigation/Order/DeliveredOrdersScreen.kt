@@ -121,7 +121,8 @@ fun DeliveredOrdersScreen(
                         Button(
                             onClick = {
                                 val donHangIdEncoded = Uri.encode(donHang._id)
-                                mainNavController.navigate(Screen.DanhGia.route + "/${donHangIdEncoded}")
+//                                Log.d("DonHangId", "Encoded DonHangId: $donHangIdEncoded")
+                                mainNavController.navigate("DanhGia/${donHangIdEncoded}")
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8774A)),
                             shape = RoundedCornerShape(5.dp)

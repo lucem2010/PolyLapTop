@@ -31,6 +31,7 @@ import bottomnavigation.BottomNavigationBar
 import bottomnavigation.ScreenBottomNavigation.CartScreen
 import bottomnavigation.ScreenBottomNavigation.DanhgiaScreenBasic
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
+import bottomnavigation.ScreenBottomNavigation.Order.DeliveredOrdersScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.SearchScreen

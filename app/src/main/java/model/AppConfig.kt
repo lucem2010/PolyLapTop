@@ -1,5 +1,5 @@
 package model
 
 object AppConfig {
-    const val ipAddress = "http://172.20.30.99:5000"
+    const val ipAddress = "http://192.168.82.95:5000"
 }
