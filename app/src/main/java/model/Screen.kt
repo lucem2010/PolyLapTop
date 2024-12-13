@@ -12,4 +12,4 @@ sealed class Screen(val route: String) {
     object ProductDetail : Screen("ProductDetail")
     object SearchScreen : Screen("SearchScreen")
     object OrderDetailsScreen : Screen("OrderDetailsScreen")
-}
+    object DanhGia : Screen("DanhGia/{id}")}

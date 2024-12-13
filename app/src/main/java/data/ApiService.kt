@@ -2,12 +2,15 @@ package data
 
 import DonHang
 import model.ChiTietSanPham
+import model.DanhGia
 import model.DonHangCT
 import model.GioHang
 import model.HangSP
 import model.SanPham
 import model.SanPhamResponse
 import model.User
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -17,6 +20,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface ApiService {
@@ -153,4 +157,30 @@ interface ApiService {
     ): Response<ChiTietDonHangResponse>
 
 
+    data class DanhGiaResponse(
+        val message: String,
+        val data: List<DanhGia>
+    )
+
+    @GET("danh-gia/{productId}")
+    suspend fun getDanhGiaByProductId(
+        @Path("productId") productId: String
+    ): Response<DanhGiaResponse>
+
+
+    @POST("don-hang/huy/{id}")
+    suspend fun huyDonHang(
+        @Path("id") donHangId: String,
+        @Header("Authorization") token: String
+    ): Response<Any>
+
+
+    @POST("danh-gia/{id}")
+    suspend fun taoDanhGia(
+        @Path("id") donHangId: String,
+        @Header("Authorization") token: String,
+        @Part("Diem") diem: RequestBody,
+        @Part("NoiDung") noiDung: RequestBody,
+        @Part hinhAnh: List<MultipartBody.Part> // Truyền danh sách MultipartBody.Part
+    ): Response<Any>
 }

@@ -29,6 +29,7 @@ import androidx.navigation.navArgument
 import bottomnavigation.BottomNavItem
 import bottomnavigation.BottomNavigationBar
 import bottomnavigation.ScreenBottomNavigation.CartScreen
+import bottomnavigation.ScreenBottomNavigation.DanhgiaScreenBasic
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
@@ -67,6 +68,14 @@ fun MyApp(viewModel: UserViewModel,donViewModel: DonHangViewModel) {
                 navController.navigate(Screen.BottomNav.route)
             })
         }
+
+        composable(
+            route = Screen.DanhGia.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStackEntry ->
+            DanhgiaScreenBasic(navController)
+        }
+
 
         composable(
             route = Screen.ProductDetail.route + "/{chiTietSanPhamJson}",
@@ -142,7 +151,9 @@ fun MyApp(viewModel: UserViewModel,donViewModel: DonHangViewModel) {
                     }
                     composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
                         mainNavController = navController) }
-                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController,viewModel,donViewModel) }
+                    composable(BottomNavItem.Order.route) { OrderScreen( bottomNavController = bottomNavController,
+                        mainNavController = navController,donViewModel) }
+
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(
                             bottomNavController = bottomNavController,

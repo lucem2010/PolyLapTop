@@ -67,6 +67,32 @@ class DonHangViewModel : ViewModel() {
         }
     }
 
+    private val _huyDonHangResult = MutableLiveData<Result<String>>()
+    val huyDonHangResult: LiveData<Result<String>> get() = _huyDonHangResult
+
+    fun huyDonHang(donHangId: String, token: String) {
+        viewModelScope.launch {
+            try {
+                // Gọi API để hủy đơn hàng với token
+                val response = apiService.huyDonHang(donHangId, "Bearer $token")
+
+                if (response.isSuccessful) {
+                    // Xử lý nếu API trả về thành công
+                    _huyDonHangResult.value = Result.success("Đơn hàng đã được hủy thành công!")
+                } else {
+                    // Xử lý nếu có lỗi từ phía server
+                    _huyDonHangResult.value = Result.failure(
+                        Exception("Hủy đơn hàng thất bại: ${response.errorBody()?.string()}")
+                    )
+                }
+            } catch (e: Exception) {
+                // Xử lý nếu có lỗi từ phía client (kết nối, cú pháp, v.v.)
+                _huyDonHangResult.value = Result.failure(
+                    Exception("Lỗi khi gọi API: ${e.message}")
+                )
+            }
+        }
+    }
 
 
 
