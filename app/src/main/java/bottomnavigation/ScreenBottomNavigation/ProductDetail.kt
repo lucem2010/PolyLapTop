@@ -18,12 +18,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -78,13 +81,14 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.polylaptop.R
 import com.google.gson.Gson
 import kotlinx.serialization.json.Json
 import model.AppConfig
 import model.ChiTietSanPham
+import model.DanhGia
 import model.HangSP
-import model.Review
 import model.SanPham
 import model.Screen
 import model.SharedPrefsManager
@@ -92,6 +96,7 @@ import model.imagesItem
 import view.OrderDetailsScreen
 import view.alert_dialog.CartIconWithLoginCheck
 import viewmodel.CartViewModel
+import viewmodel.DanhGiaViewModel
 import viewmodel.SanPhamViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -101,13 +106,12 @@ import java.net.URLEncoder
 fun ProductDetail(   navController: NavController,
                      chiTietSanPhamJson: String?,
                      cartViewModel: CartViewModel= viewModel(),
-                     sanPhamViewModel: SanPhamViewModel= viewModel()
+                     sanPhamViewModel: SanPhamViewModel= viewModel(),
+                     danhGiaViewModel: DanhGiaViewModel= viewModel()
 ) {
 
 
     val showDialogState = remember { mutableStateOf(false) }
-
-    var isReviewDropdownVisible by remember { mutableStateOf(false) }
 
     // Giải mã và chuyển đổi chuỗi JSON thành đối tượng `ChiTietSanPham`
     val chiTietSanPham = chiTietSanPhamJson?.let {
@@ -186,39 +190,25 @@ fun ProductDetail(   navController: NavController,
     }
 
 // Kiểm tra nếu có sản phẩm phù hợp
-    val selectedProduct = filteredProducts?.firstOrNull { it._id == chiTietSanPham?._id }
-
-
+    var selectedProduct by remember { mutableStateOf<ChiTietSanPham?>(null) }
 
     val imgLogo = "https://vuainnhanh.com/wp-content/uploads/2023/02/logo-FPT-Polytechnic-.png"
 
-    val reviewData = listOf(
-        Review(
-            "User 1",
-            "2024-11-07",
-            5,
-            "Great product, highly recommended!Great product, highly recommended!Great product, highly recommended!"
-        ),
-        Review(
-            "User 2",
-            "2024-11-06",
-            4,
-            "Fast delivery and good packaging.Great product, highly recommended!Great product, highly recommended!"
-        ),
-        Review(
-            "User 3",
-            "2024-11-05",
-            3,
-            "Not satisfied with the quality.Great product, highly recommended!Great product, highly recommended!"
-        ),
-        Review(
-            "User 4",
-            "2024-11-04",
-            5,
-            "Amazing service, will buy again!Great product, highly recommended!Great product, highly recommended!Great product, highly recommended!Great product, highly recommended!"
-        ),
+    // Cập nhật selectedProduct
+    LaunchedEffect(filteredProducts, chiTietSanPham) {
+        if (filteredProducts != null) {
+            selectedProduct = filteredProducts.firstOrNull { it._id == chiTietSanPham?._id }
+        }
+    }
 
-        )
+    // Gọi fetchDanhGias khi selectedProduct thay đổi
+    LaunchedEffect(selectedProduct) {
+        selectedProduct?.let { danhGiaViewModel.fetchDanhGias(it._id) }
+    }
+
+
+    val danhGiaList by danhGiaViewModel.danhGias.observeAsState(emptyList())
+
 
     val context = LocalContext.current
     val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
@@ -363,7 +353,7 @@ fun ProductDetail(   navController: NavController,
                 )
                 Text(
                     text = if (selectedProduct != null) {
-                        "${selectedProduct.Gia} VND"
+                        "${selectedProduct!!.Gia} VND"
                     } else {
                         "Hết hàng"
                     },
@@ -499,89 +489,126 @@ fun ProductDetail(   navController: NavController,
         }
         // Reviews Section
         item {
-            Row(
+            var showReviews by remember { mutableStateOf(false) } // State để kiểm soát hiển thị đánh giá
+
+            Column(
                 modifier = Modifier
                     .padding(top = 10.dp, end = 20.dp, start = 20.dp, bottom = 30.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+                    .fillMaxWidth()
             ) {
-                //Tao chu nghieng va gach chan
-                AverageRatingRow(reviewData = reviewData)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = buildAnnotatedString {
-                        val text = "(${reviewData.size}+ Reviews)"
-                        append(text)
-                        addStyle(
-                            style = SpanStyle(textDecoration = TextDecoration.Underline),
-                            start = 0,
-                            end = text.length
-                        )
-                    },
-                    fontSize = 16.sp,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.clickable {
-                        isReviewDropdownVisible = !isReviewDropdownVisible
-                    }
-                )
+                // Nút "Xem đánh giá"
+                Button(
+                    onClick = { showReviews = !showReviews },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (showReviews) "Ẩn đánh giá" else "Xem đánh giá")
+                }
 
+                // Hiển thị danh sách đánh giá nếu showReviews = true
+                if (showReviews) {
+                    // Sử dụng LazyColumn để hiển thị danh sách đánh giá
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(top = 10.dp)
+                            .fillMaxWidth()
+                            .heightIn(max = 500.dp) // Hạn chế chiều cao tối đa nếu cần thiết
+                    ) {
+                        items(danhGiaList) { danhGia ->
+                            ReviewItem(danhGia = danhGia,ipAddress)
+                        }
+                    }
+                }
             }
         }
-        if (isReviewDropdownVisible) {
-            items(reviewData) { review ->
-                ReviewItem(review)
-            }
-        }
+
+
 
     }
 }
 
+
+// Hàm để hiển thị một đối tượng đánh giá
 @Composable
-fun ReviewItem(review: Review) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 20.dp)
-    ) {
-        Row {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_person),
-                contentDescription = "Icon Person",
-                tint = Color.Gray,
-                modifier = Modifier.size(30.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "${review.username}",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.CenterVertically)
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
+fun ReviewItem(danhGia: DanhGia, ipAddress: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .background(color = Color.White, shape = RoundedCornerShape(8.dp))
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                repeat(review.rating) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.star),
-                        contentDescription = "Rating Star",
-                        tint = Color.Yellow,
-                        modifier = Modifier.size(16.dp)
+            // Avatar người dùng (bo tròn)
+            val avatarUrl = danhGia.idUser.Avatar?.let { "$ipAddress$it" } // Kết hợp IP với đường dẫn ảnh
+
+// Nếu avatarUrl là null, hiển thị hình ảnh mặc định 'heart1' từ drawable
+            val imagePainter = rememberImagePainter(
+                data = avatarUrl ?: R.drawable.img1 // Thay thế bằng hình ảnh từ drawable nếu avatarUrl là null
+            )
+
+            Image(
+                painter = imagePainter,
+                contentDescription = "Avatar người dùng",
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape) // Bo tròn hình ảnh
+                    .border(2.dp, Color.Gray, CircleShape) // Viền xung quanh avatar
+            )
+
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Thông tin đánh giá
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Người dùng: ${danhGia.idUser.HoTen}",
+                    style = MaterialTheme.typography.subtitle1
+                )
+                Text(
+                    text = "Điểm: ${danhGia.Diem}",
+                    style = MaterialTheme.typography.body2
+                )
+                Text(
+                    text = "Nội dung: ${danhGia.NoiDung}",
+                    style = MaterialTheme.typography.body2
+                )
+            }
+        }
+
+
+
+        // Hiển thị hình ảnh (nếu có)
+        if (danhGia.HinhAnh.isNotEmpty()) {
+            LazyRow(modifier = Modifier.padding(top = 8.dp)) {
+                items(danhGia.HinhAnh) { imageUrl ->
+                    // Kết hợp IP với URL hình ảnh cho mỗi ảnh trong danh sách HinhAnh
+                    val fullImageUrl = "$ipAddress$imageUrl"
+
+                    Image(
+                        painter = rememberImagePainter(data = fullImageUrl), // Sử dụng URL đầy đủ cho mỗi ảnh
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(end = 8.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "${review.date}",
-                fontWeight = FontWeight.Bold
-            )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = review.comment)
+        // Đường kẻ ngang màu cam
+        Divider(
+            color = Color(0xFFFF5722), // Màu cam
+            thickness = 1.dp, // Độ dày của đường kẻ
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
     }
 }
+
+
+
+
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -657,57 +684,6 @@ fun DropdownOption(
     }
 }
 
-
-@Composable
-fun AverageRatingRow(reviewData: List<Review>) {
-
-    // Tính toán trung bình xếp hạng từ danh sách đánh giá
-    val averageRating = calculateAverageRating(reviewData)
-    // Lấy phần nguyên và phần thập phân của rating
-    val fullStars = averageRating.toInt() // Số sao đầy đủ
-    val isHalfStar = (averageRating % 1) != 0.0.toFloat() // Kiểm tra có sao lẻ hay không
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        // Hiển thị tổng trung bình dưới dạng số
-        Text(
-            text = "%.1f".format(averageRating),
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 8.dp)
-        )
-        Row(
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            for (index in 1..5) {
-                Icon(
-                    imageVector = when {
-                        index <= fullStars -> Icons.Rounded.Star // Sao đầy
-                        index == fullStars + 1 && isHalfStar -> Icons.Rounded.StarHalf // Sao lẻ
-                        else -> Icons.Rounded.StarOutline // Sao trống
-                    },
-                    contentDescription = null,
-                    tint = Color.Blue, // Màu sao (bạn có thể tùy chỉnh theo ý muốn)
-                    modifier = Modifier.size(20.dp) // Kích thước sao (tuỳ chỉnh nếu cần)
-                )
-            }
-        }
-    }
-}
-
-//tính xếp hạng trung bình từ danh sách đánh giá của bạn
-fun calculateAverageRating(reviews: List<Review>): Float {
-    return if (reviews.isNotEmpty()) {
-        reviews.map { it.rating }.average().toFloat()
-    } else {
-        0f
-    }
-}
 
 
 

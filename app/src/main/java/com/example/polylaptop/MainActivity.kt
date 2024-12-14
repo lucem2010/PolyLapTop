@@ -32,7 +32,9 @@ import androidx.navigation.navArgument
 import bottomnavigation.BottomNavItem
 import bottomnavigation.BottomNavigationBar
 import bottomnavigation.ScreenBottomNavigation.CartScreen
+import bottomnavigation.ScreenBottomNavigation.DanhgiaScreenBasic
 import bottomnavigation.ScreenBottomNavigation.HomeScreen
+import bottomnavigation.ScreenBottomNavigation.Order.DeliveredOrdersScreen
 import bottomnavigation.ScreenBottomNavigation.OrderScreen
 import bottomnavigation.ScreenBottomNavigation.ProductDetail
 import bottomnavigation.ScreenBottomNavigation.SearchScreen
@@ -47,6 +49,9 @@ import view.OrderDetailsScreen
 import view.WelcomeScreen
 import viewmodel.ChatViewModel
 import viewmodel.PaymentViewModel
+
+import viewmodel.DonHangViewModel
+
 import viewmodel.UserViewModel
 import vn.zalopay.sdk.Environment
 import vn.zalopay.sdk.ZaloPaySDK
@@ -67,7 +72,9 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             val userViewModel: UserViewModel = viewModel()
-            MyApp(userViewModel,paymentViewModel,chatViewModel) // Truyền ViewModel vào MyApp
+            val donViewModel: DonHangViewModel = viewModel()
+
+            MyApp(userViewModel,paymentViewModel,chatViewModel,donViewModel) // Truyền ViewModel vào MyApp
         }
 
     }
@@ -88,7 +95,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel,chatViewModel: ChatViewModel) {
+
+fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel,chatViewModel: ChatViewModel,donViewModel: DonHangViewModel) {
+
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         // Màn hình chào mừng
@@ -100,6 +109,14 @@ fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel,chatView
         composable(route = Screen.ChatScreen.route){
             ChatScreen(navController,chatViewModel)
         }
+        composable(
+            route = Screen.DanhGia.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStackEntry ->
+            DanhgiaScreenBasic(navController)
+        }
+
+
         composable(
             route = Screen.ProductDetail.route + "/{chiTietSanPhamJson}",
             arguments = listOf(
@@ -173,7 +190,9 @@ fun MyApp(viewModel: UserViewModel , paymentViewModel: PaymentViewModel,chatView
                     }
                     composable(BottomNavItem.Cart.route) { CartScreen(bottomNavController,
                         mainNavController = navController) }
-                    composable(BottomNavItem.Order.route) { OrderScreen(bottomNavController,viewModel) }
+                    composable(BottomNavItem.Order.route) { OrderScreen( bottomNavController = bottomNavController,
+                        mainNavController = navController,donViewModel) }
+
                     composable(BottomNavItem.Setting.route) {
                         SettingScreen(
                             bottomNavController = bottomNavController,

@@ -1,6 +1,9 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,11 +17,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,183 +42,201 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.rememberImagePainter
+import model.AppConfig
+import model.DonHangCT
+import viewmodel.DonHangViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
-fun CanceledOrderScreen() {
-    val products = listOf(
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        )
-    )
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(products) { product ->
-            CanceledOrderItem(
-                productName = product.productName,
-                productImage = product.productImage,
-                quantity = product.quantity,
-                originalPrice = product.originalPrice,
-                discountedPrice = product.discountedPrice,
-                totalPrice = product.totalPrice,
-            )
-        }
-    }
-}
-@Composable
-fun CanceledOrderItem(
-    productImage: String,
-    productName: String,
-    quantity: Int,
-    originalPrice: Double,
-    discountedPrice: Double,
-    totalPrice: Double
+fun CanceledOrderScreen(
+    searchQuery: String,
+    donHangList: List<DonHang>, // The filtered list of canceled orders
+    viewModel: DonHangViewModel // Pass the ViewModel
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = 4.dp,
-        backgroundColor = Color(0xFFF9F9F9) // Màu nền nhạt để phân biệt
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar (Hình ảnh sản phẩm)
-            Image(
-                painter = rememberImagePainter(productImage),
-                contentDescription = "Hình ảnh sản phẩm",
+    var showDialog by remember { mutableStateOf(false) }
+    var orderDetails by remember { mutableStateOf<List<DonHangCT>>(emptyList()) }
+
+    // Observe the chiTietDonHangLiveData to update the order details when available
+    val chiTietDonHang by viewModel.chiTietDonHangLiveData.observeAsState(emptyList())
+    val filteredList = filterOrdersByDate(donHangList, searchQuery)
+    LazyColumn(modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = 10.dp, end = 10.dp)) {
+        items(filteredList) { donHang ->
+            Card(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Thông tin sản phẩm
-            Column(
-                modifier = Modifier.weight(1f)
+                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                    .fillMaxWidth()
+                    .clickable {
+                        // Khi click vào một item, gọi API lấy chi tiết đơn hàng đã hủy
+                        viewModel.getChiTietDonHang(donHang._id)
+                        // Cập nhật chi tiết đơn hàng và hiển thị dialog
+                        orderDetails = chiTietDonHang
+                        showDialog = true
+                    },
+                elevation = 4.dp,
+                shape = MaterialTheme.shapes.medium
             ) {
-                // Tên sản phẩm và số lượng ở hai đầu
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Hiển thị thông tin đơn hàng
                     Text(
-                        text = productName,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 14.sp
+                        text = "ID Đơn hàng: ${donHang._id}",
+                        style = MaterialTheme.typography.body1,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(text = "x$quantity")
-                }
-                // Giá gốc và giá giảm
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     Text(
-                        text = "${originalPrice.formatCurrency()}",
-                        style = TextStyle(
-                            textDecoration = TextDecoration.LineThrough,
-                            color = Color.Gray,
-                            fontSize = 14.sp
+                        text = "Trạng thái: ${donHang.TrangThai}",
+                        style = MaterialTheme.typography.body2
+                    )
+                    Text(
+                        text = "Ngày đặt: ${
+                            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                .format(donHang.NgayDatHang)
+                        }",
+                        style = MaterialTheme.typography.body2
+                    )
+                    donHang.tongTien?.let {
+                        Text(
+                            text = "Tổng tiền: ${it.toInt()} VNĐ",
+                            style = MaterialTheme.typography.body2
                         )
-                    )
-                    Text(
-                        text = "${discountedPrice.formatCurrency()}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        // Mua lại đơn hàng Button
+                        androidx.compose.material3.Button(
+                            onClick = {
 
-                // Tổng tiền
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "Tổng tiền: ${totalPrice.formatCurrency()}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Button(
-                    onClick = { /* Handle đánh giá và nhận xét */ },
-                    colors = ButtonDefaults.buttonColors(
-                        Color(0xFFF8774A) // Đổi màu sang #F8774A
-                    ),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Mua lại", color = Color.White)
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF8774A)
+                            ),
+                            shape = RoundedCornerShape(5.dp)
+                        ) {
+                            Text(
+                                text = "Mua lại",
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+
+    // Hiển thị Dialog khi click vào một đơn hàng
+    if (showDialog) {
+        ChiTietCancelDialog(
+            orderDetails = orderDetails, // Truyền dữ liệu chi tiết đơn hàng
+            onDismiss = { showDialog = false } // Đóng dialog khi người dùng nhấn "Đóng"
+        )
+    }
 }
 
-data class CanceledOrder(
-    val productName: String,
-    val productImage: String,
-    val quantity: Int,
-    val originalPrice: Double,
-    val discountedPrice: Double,
-    val totalPrice: Double
-)
+@Composable
+fun ChiTietCancelDialog(
+    orderDetails: List<DonHangCT>, // Dữ liệu chi tiết đơn hàng
+    onDismiss: () -> Unit // Hàm callback để đóng dialog
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss, // Đóng dialog khi người dùng click ngoài
+        text = {
+            LazyColumn {
+                items(orderDetails) { chiTiet ->
+                    Card(
+                        modifier = Modifier
+                            .padding(vertical = 8.dp, horizontal = 8.dp)
+                            .fillMaxWidth(),
+                        elevation = 4.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+//                        Column(modifier = Modifier.padding(8.dp)) {
+//                            // Hiển thị chi tiết các sản phẩm trong đơn hàng
+//                            orderDetails.forEach { chiTiet ->
+//                                Text(text = "Sản phẩm: ${chiTiet.idSanPhamCT.idSanPham.tenSP}")
+//                                Text(text = "Số lượng: ${chiTiet.idSanPhamCT.SoLuong}")
+//                                Text(text = "Giá: ${chiTiet.idSanPhamCT.Gia} VNĐ")
+//                                Spacer(modifier = Modifier.height(4.dp))
+//                            }
+//                        }
+                        Column(modifier = Modifier.padding(3.dp)) {
+                            Row{
+                                // Hiển thị ảnh sản phẩm đầu tiên (nếu có)
+                                chiTiet.idSanPhamCT.idSanPham.anhSP?.firstOrNull()
+                                    ?.let { imageUrl ->
+                                        val fullImageUrl = "${AppConfig.ipAddress}$imageUrl"
+                                        AsyncImage(
+                                            model = fullImageUrl,
+                                            contentDescription = "Ảnh sản phẩm",
+                                            modifier = Modifier
+                                                .width(70.dp)
+                                                .height(70.dp)
+                                                .border(
+                                                    1.dp,
+                                                    Color.LightGray,
+                                                    RoundedCornerShape(5.dp)
+                                                )
+                                                .clip(RoundedCornerShape(5.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Column(
+                                    horizontalAlignment = Alignment.Start
+                                ) {
+                                    Text(
+                                        text = "${chiTiet.idSanPhamCT.idSanPham.tenSP}",
+                                        style = MaterialTheme.typography.body2,
+                                        color = Color.Black
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "${chiTiet.idSanPhamCT.idSanPham.idHangSP.TenHang}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                        Text(
+                                            text = "x${chiTiet.SoLuongMua}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                }
+                            }
+                            chiTiet.TongTien?.let {
+                                Text(
+                                    text = "Tổng tiền: ${it.toInt()} VNĐ",
+                                    style = MaterialTheme.typography.body2,
+                                    color = Color.Black,
+                                    modifier = Modifier.align(Alignment.End)
+                                )
+                            }
+                        }
+
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Đóng")
+            }
+        }
+    )
+}
 
 @Composable
 @Preview(showBackground = true)
 fun CanceledOrderItemPreview() {
-    CanceledOrderItem(
-        productImage = "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-        productName = "Laptop Dell XPS 13",
-        quantity = 1,
-        originalPrice = 30000000.0,
-        discountedPrice = 25000000.0,
-        totalPrice = 25000000.0
-    )
+
 }

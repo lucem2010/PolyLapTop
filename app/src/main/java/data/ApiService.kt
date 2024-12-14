@@ -1,6 +1,9 @@
 package data
 
+import DonHang
 import model.ChiTietSanPham
+import model.DanhGia
+import model.DonHangCT
 import model.GioHang
 import model.HangSP
 import model.Message
@@ -8,6 +11,8 @@ import model.SanPham
 import model.SanPhamResponse
 import model.Sender
 import model.User
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -15,8 +20,10 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface ApiService {
@@ -46,10 +53,8 @@ interface ApiService {
         val data: List<GioHang>       // Danh sách các giỏ hàng
     )
 
-    data class AddToCartResponse(
-        val message: String,  // Thông điệp từ server
-        val data: GioHang?    // Dữ liệu về giỏ hàng (nếu có)
-    )
+
+
     @GET("hang")
     suspend fun getHang(): Response<model.Response<HangSP>>  // Trả về SanPhamResponse
 
@@ -139,10 +144,7 @@ interface ApiService {
         val Type: String,
         val SanPhamCTs: List<SanPhamCT>
     )
-    data class DonHangResponse(
-        val message: String,
-        val data: Any?
-    )
+
 
     @POST("/don-hang/mua-hang")
     suspend fun ThanhToan(
@@ -187,5 +189,56 @@ interface ApiService {
     @POST("/chat/contact")
     suspend fun contactMessage(@Header("Authorization") token:String): Response<ChatResponse>
 
+    data class DonHangResponse(
+        val message: String,
+        val data: List<DonHang>
+    )
+
+    data class ChiTietDonHangResponse(
+        val message: String,
+        val data: List<DonHangCT>
+    )
+
+
+    @GET("don-hang")
+    suspend fun getDonHang(
+        @Header("Authorization") token: String
+    ): Response<DonHangResponse>
+
+
+    @GET("chi-tiet-don-hang/{id}")
+    suspend fun getChiTietDonHang(
+        @Path("id") idDonHang: String
+    ): Response<ChiTietDonHangResponse>
+
+
+    data class DanhGiaResponse(
+        val message: String,
+        val data: List<DanhGia>
+    )
+
+    @GET("danh-gia/{productId}")
+    suspend fun getDanhGiaByProductId(
+        @Path("productId") productId: String
+    ): Response<DanhGiaResponse>
+
+
+    @POST("don-hang/huy/{id}")
+    suspend fun huyDonHang(
+        @Path("id") donHangId: String,
+        @Header("Authorization") token: String
+    ): Response<Any>
+
+
+    @Multipart // Thêm @Multipart
+    @POST("danh-gia/{id}")
+    suspend fun taoDanhGia(
+        @Path("id") donHangId: String,
+        @Part("idUser") idUser: RequestBody,
+        @Header("Authorization") token: String,
+        @Part("Diem") diem: RequestBody,
+        @Part("NoiDung") noiDung: RequestBody,
+        @Part hinhAnh: List<MultipartBody.Part> // Truyền danh sách MultipartBody.Part
+    ): Response<Any>
 
 }

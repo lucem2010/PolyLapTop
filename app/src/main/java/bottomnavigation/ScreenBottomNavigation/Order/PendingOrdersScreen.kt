@@ -1,200 +1,372 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
+import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.ListItem
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.rememberImagePainter
+import model.AppConfig
+import model.ChiTietSanPham
+import model.DonHangCT
+import model.HangSP
+import model.SanPham
+import model.SharedPrefsManager
+import viewmodel.DonHangViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
-fun PendingOrdersScreen() {
-
-    val products = listOf(
-        Product(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            3,
-            2000000.0,
-            1000.0,
-            200000.0
-        ),
-        Product(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            4,
-            2000000.0,
-            1000.0,
-            200000.0
-        ),
-        Product(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            2,
-            2000000.0,
-            1000.0,
-            200000.0
-        ),
-        Product(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            2000000.0,
-            1000.0,
-            200000.0
-        ),
-        Product(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            5,
-            2000000.0,
-            1000.0,
-            200000.0
-        )
-    )
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(products) { product ->
-            OrderItem(
-                productName = product.productName,
-                productImage = product.productImage,
-                quantity = product.quantity,
-                pricePerUnit = product.pricePerUnit,
-                discount = product.discount,
-                totalAmount = product.totalAmount
-            )
-        }
-    }
-}
-
-@Composable
-fun OrderItem(
-    productName: String,
-    productImage: String,
-    quantity: Int,
-    pricePerUnit: Double,
-    discount: Double,
-    totalAmount: Double
+fun PendingOrdersScreen(
+    searchQuery: String,
+    donHangList: List<DonHang>,
+    viewModel: DonHangViewModel
 ) {
-    Card(
+    if (donHangList.isEmpty()) {
+        Log.d("PendingOrdersScreen", "DonHang List is empty")
+    } else {
+        Log.d(
+            "PendingOrdersScreen",
+            "DonHang List: ${donHangList.joinToString(", ") { it.toString() }}"
+        )
+    }
+
+    val filteredList = filterOrdersByDate(donHangList, searchQuery)
+    var selectedDonHang by remember { mutableStateOf<DonHang?>(null) } // State lưu đơn hàng đã chọn
+    val chiTietDonHangList by viewModel.chiTietDonHangLiveData.observeAsState(emptyList()) // Lắng nghe dữ liệu chi tiết đơn hàng
+    var showCancelDialog by remember { mutableStateOf<DonHang?>(null) } // State hiển thị dialog hủy
+    val context = LocalContext.current
+    val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+
+    LazyColumn(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = 4.dp
+            .fillMaxSize()
+            .padding(start = 10.dp, end = 10.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Hình ảnh sản phẩm
-            Image(
-                painter = rememberImagePainter(productImage),
-                contentDescription = "Hình ảnh sản phẩm",
+        items(filteredList) { donHang ->
+            Card(
                 modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
+                    .clickable {
+                        selectedDonHang = donHang // Lưu đơn hàng đã chọn
+                        viewModel.getChiTietDonHang(donHang._id) // Lấy chi tiết đơn hàng khi click vào item
+                    }
+                    .padding(vertical = 8.dp)
+                    .fillMaxWidth(),
+                elevation = 4.dp,
+                shape = MaterialTheme.shapes.medium
             ) {
-                // Tên sản phẩm và số lượng ở hai đầu
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = productName,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 14.sp
-                    )
-                    Text(text = "x$quantity")
-                }
-
-                // Giá gốc và giá giảm
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(16.dp)
                 ) {
                     Text(
-                        text = pricePerUnit.formatCurrency(),
-                        style = TextStyle(textDecoration = TextDecoration.LineThrough),
-                        fontSize = 14.sp
+                        text = "ID Đơn hàng: ${donHang._id}",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.onSurface,
+                        fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = (pricePerUnit - discount).formatCurrency(), fontSize = 14.sp)
-                }
 
-                // Tổng tiền
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "Tổng tiền: ${totalAmount.formatCurrency()}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Column {
+                        Text(
+                            "Trạng thái: ${donHang.TrangThai}",
+                            style = MaterialTheme.typography.body2
+                        )
+                        Text(
+                            "Ngày đặt: ${
+                                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(
+                                    donHang.NgayDatHang
+                                )
+                            }",
+                            style = MaterialTheme.typography.body2
+                        )
+                        donHang.tongTien?.let {
+                            Text(
+                                "Tổng tiền: ${it.toInt()} VNĐ",
+                                style = MaterialTheme.typography.body2
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = {
+                                showCancelDialog = donHang // Hiển thị dialog hủy đơn hàng
+                            },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF8774A)),
+                            shape = RoundedCornerShape(5.dp)
+                        ) {
+                            Text(
+                                text = "Hủy",
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+
+    // Dialog chi tiết đơn hàng
+    selectedDonHang?.let { donHang ->
+        ChiTietPendingDialog(
+            chiTietList = chiTietDonHangList,
+            onDismiss = { selectedDonHang = null }
+        )
+    }
+
+    // Dialog xác nhận hủy đơn hàng
+    showCancelDialog?.let { donHang ->
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = null },
+            title = {
+                Text(text = "Xác nhận hủy đơn hàng")
+            },
+            text = {
+                Text(text = "Bạn có chắc chắn muốn hủy đơn không?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (token != null) {
+                            viewModel.huyDonHang(donHang._id,token)
+                        } // Gọi hàm hủy đơn hàng
+                        showCancelDialog = null
+                    }
+                ) {
+                    Text(text = "Đồng ý", color = Color(0xFFF8774A))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showCancelDialog = null
+                    }
+                ) {
+                    Text(text = "Hủy")
+                }
+            }
+        )
+    }
 }
 
-// Extension function để định dạng số tiền theo định dạng tiền tệ
-fun Double.formatCurrency(): String {
-    return String.format("%, .0f", this)
+@Composable
+fun ChiTietPendingDialog(
+    chiTietList: List<DonHangCT>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            // Hiển thị danh sách chi tiết đơn hàng trong LazyColumn
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(chiTietList) { chiTiet ->
+                    // Hiển thị thông tin của từng sản phẩm trong một Card
+                    Card(
+                        modifier = Modifier
+                            .padding(vertical = 3.dp, horizontal = 3.dp)
+                            .fillMaxWidth(),
+                        elevation = 4.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Column(modifier = Modifier.padding(3.dp)) {
+                            Row{
+                                // Hiển thị ảnh sản phẩm đầu tiên (nếu có)
+                                chiTiet.idSanPhamCT.idSanPham.anhSP?.firstOrNull()
+                                    ?.let { imageUrl ->
+                                        val fullImageUrl = "${AppConfig.ipAddress}$imageUrl"
+                                        Log.d("Image URL", "Image URL: $fullImageUrl")
+                                        AsyncImage(
+                                            model = fullImageUrl,
+                                            contentDescription = "Ảnh sản phẩm",
+                                            modifier = Modifier
+                                                .width(70.dp)
+                                                .height(70.dp)
+                                                .border(
+                                                    1.dp,
+                                                    Color.LightGray,
+                                                    RoundedCornerShape(5.dp)
+                                                )
+                                                .clip(RoundedCornerShape(5.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Column(
+                                    horizontalAlignment = Alignment.Start
+                                ) {
+                                    Text(
+                                        text = "${chiTiet.idSanPhamCT.idSanPham.tenSP}",
+                                        style = MaterialTheme.typography.body2,
+                                        color = Color.Black
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "${chiTiet.idSanPhamCT.idSanPham.idHangSP.TenHang}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                        Text(
+                                            text = "x${chiTiet.SoLuongMua}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                }
+                            }
+                            chiTiet.TongTien?.let {
+                                Text(
+                                    text = "Tổng tiền: ${it.toInt()} VNĐ",
+                                    style = MaterialTheme.typography.body2,
+                                    color = Color.Black,
+                                    modifier = Modifier.align(Alignment.End)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Đóng")
+            }
+        }
+    )
 }
 
+fun filterOrdersByDate(orders: List<DonHang>, searchQuery: String): List<DonHang> {
+    if (searchQuery.isEmpty()) return orders
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return try {
+        orders.filter { donHang ->
+            val orderDate = dateFormat.format(donHang.NgayDatHang)
+            orderDate.contains(searchQuery, ignoreCase = true)
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
 
-data class Product(
-    val productName: String,
-    val productImage: String,
-    val quantity: Int,
-    val pricePerUnit: Double,
-    val discount: Double,
-    val totalAmount: Double
-)
 
 @Composable
 @Preview(showBackground = true)
 fun OrderPreview() {
-    val pricePerUnit = 150000.0
-    val discount = 50000.0
-    val discountedPrice = pricePerUnit - discount
-    OrderItem(
-        productName = "Sản phẩm 1",
-        productImage = "https://laptop88.vn/media/product/pro_poster_8910.jpg", // Hình ảnh sản phẩm (tạm thời)
-        quantity = (1 + 1) * 2,
-        pricePerUnit = 150000.0,
-        discount = 50000.0,
-        totalAmount = discountedPrice * ((1 + 1) * 2)
+    val sampleChiTietList = listOf(
+        DonHangCT(
+            idDonHang = "DH001",
+            idSanPhamCT = ChiTietSanPham(
+                _id = "CTSP001",
+                idSanPham = SanPham(
+                    _id = "SP001",
+                    idHangSP = HangSP(
+                        _id = "HANG001",
+                        TenHang = "Hãng A"
+                    ),
+                    tenSP = "Sản phẩm A",
+                    anhSP = listOf("/images/sample_image.jpg")
+                ),
+                MauSac = "Đỏ",
+                Ram = "8GB",
+                SSD = "256GB",
+                ManHinh = "15.6 inch",
+                SoLuong = 5,
+                Gia = 15000000,
+                MoTa = "Mô tả sản phẩm A"
+            ),
+            SoLuongMua = 2,
+            TongTien = 30000000.0
+        ),
+        DonHangCT(
+            idDonHang = "DH002",
+            idSanPhamCT = ChiTietSanPham(
+                _id = "CTSP002",
+                idSanPham = SanPham(
+                    _id = "SP002",
+                    idHangSP = HangSP(
+                        _id = "HANG002",
+                        TenHang = "Hãng B"
+                    ),
+                    tenSP = "Sản phẩm B",
+                    anhSP = listOf("/images/sample_image2.jpg")
+                ),
+                MauSac = "Xanh",
+                Ram = "16GB",
+                SSD = "512GB",
+                ManHinh = "14 inch",
+                SoLuong = 3,
+                Gia = 20000000,
+                MoTa = "Mô tả sản phẩm B"
+            ),
+            SoLuongMua = 1,
+            TongTien = 20000000.0
+        )
+    )
+
+    ChiTietPendingDialog(
+        chiTietList = sampleChiTietList,
+        onDismiss = {}
     )
 }

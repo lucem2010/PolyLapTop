@@ -1,6 +1,11 @@
 package bottomnavigation.ScreenBottomNavigation.Order
 
+import DonHang
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,11 +19,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,189 +44,217 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import coil.compose.rememberImagePainter
+import model.AppConfig
+import model.DonHangCT
+import model.Screen
+import viewmodel.DonHangViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
-fun DeliveredOrdersScreen() {
-
-    val products = listOf(
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        ),
-        DeliveredOrder(
-            "Sản phẩm 12",
-            "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-            1,
-            30000000.0,
-            15000000.0,
-            200000.0
-        )
-    )
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(products) { product ->
-            DeliveredOrderItem(
-                productName = product.productName,
-                productImage = product.productImage,
-                quantity = product.quantity,
-                originalPrice = product.originalPrice,
-                discountedPrice = product.discountedPrice,
-                totalPrice = product.totalPrice,
-            )
-        }
-    }
-}
-
-@Composable
-fun DeliveredOrderItem(
-    productImage: String,
-    productName: String,
-    quantity: Int,
-    originalPrice: Double,
-    discountedPrice: Double,
-    totalPrice: Double,
+fun DeliveredOrdersScreen(
+    searchQuery: String,
+    donHangList: List<DonHang>, // The filtered list of delivered orders
+    onReviewClick: (DonHang) -> Unit, // Callback to handle review button click
+    onCancelOrderClick: (DonHang) -> Unit, // Callback to handle cancel order button click
+    viewModel: DonHangViewModel = viewModel(),// ViewModel instance
+    mainNavController: NavController,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar (Hình ảnh sản phẩm)
-            Image(
-                painter = rememberImagePainter(productImage),
-                contentDescription = "Hình ảnh sản phẩm",
+    var showDialog by remember { mutableStateOf(false) }
+    var orderDetails by remember { mutableStateOf<List<DonHangCT>>(emptyList()) }
+
+    // Observe the LiveData for order details
+    val chiTietDonHang by viewModel.chiTietDonHangLiveData.observeAsState(emptyList())
+    val filteredList = filterOrdersByDate(donHangList, searchQuery)
+    LazyColumn(modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = 10.dp, end = 10.dp)) {
+        items(filteredList) { donHang ->
+            Card(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Thông tin sản phẩm
-            Column(
-                modifier = Modifier.weight(1f)
+                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                    .fillMaxWidth()
+                    .clickable {
+                        // Trigger the API call to fetch order details when an order is clicked
+                        viewModel.getChiTietDonHang(donHang._id)
+                        showDialog = true
+                    },
+                elevation = 4.dp,
+                shape = MaterialTheme.shapes.medium
             ) {
-                // Tên sản phẩm và số lượng ở hai đầu
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Display order information
                     Text(
-                        text = productName,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 14.sp
+                        text = "ID Đơn hàng: ${donHang._id}",
+                        style = MaterialTheme.typography.body1,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(text = "x$quantity")
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Giá gốc và giá giảm
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     Text(
-                        text = "${originalPrice.formatCurrency()}",
-                        style = TextStyle(
-                            textDecoration = TextDecoration.LineThrough,
-                            color = Color.Gray,
-                            fontSize = 14.sp
+                        text = "Trạng thái: ${donHang.TrangThai}",
+                        style = MaterialTheme.typography.body2
+                    )
+                    Text(
+                        text = "Ngày đặt: ${
+                            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                .format(donHang.NgayDatHang)
+                        }",
+                        style = MaterialTheme.typography.body2
+                    )
+                    donHang.tongTien?.let {
+                        Text(
+                            text = "Tổng tiền: ${it.toInt()} VNĐ",
+                            style = MaterialTheme.typography.body2
                         )
-                    )
-                    Text(
-                        text = "${discountedPrice.formatCurrency()}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Tổng tiền
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "Tổng tiền: ${totalPrice.formatCurrency()}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
+                    // Buttons for "Đánh giá" and "Hủy đơn hàng"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        // Đánh giá Button
+                        Button(
+                            onClick = {
+                                val donHangIdEncoded = Uri.encode(donHang._id)
+//                                Log.d("DonHangId", "Encoded DonHangId: $donHangIdEncoded")
+                                mainNavController.navigate("DanhGia/${donHangIdEncoded}")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8774A)),
+                            shape = RoundedCornerShape(5.dp)
+                        ) {
+                            Text(
+                                text = "Đánh giá",
+                                color = Color.White
+                            )
+                        }
 
-                // Nút "Đánh giá"
-                Button(
-                    onClick = {},
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0xFFF8774A) // Màu cam
-                    ),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(text = "Đánh giá", color = Color.White)
+                    }
                 }
             }
-
-
         }
+    }
+
+    // Show Dialog with order details when the dialog state is true
+    if (showDialog) {
+        // Use the observed chiTietDonHang data to display in the dialog
+        ChiTietDeliveredDialog(
+            orderDetails = chiTietDonHang,
+            onDismiss = { showDialog = false } // Close the dialog
+        )
     }
 }
 
-data class DeliveredOrder(
-    val productName: String,
-    val productImage: String,
-    val quantity: Int,
-    val originalPrice: Double,
-    val discountedPrice: Double,
-    val totalPrice: Double
-)
+@Composable
+fun ChiTietDeliveredDialog(
+    orderDetails: List<DonHangCT>, // The order details to display
+    onDismiss: () -> Unit // Callback to close the dialog
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            LazyColumn {
+                items(orderDetails) { chiTiet ->
+                    Card(
+                        modifier = Modifier
+                            .padding(vertical = 3.dp, horizontal = 3.dp)
+                            .fillMaxWidth(),
+                        elevation = 4.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+//                        Column(modifier = Modifier.padding(16.dp)) {
+//                            // Display product details in the order
+//                            Text("ID Sản phẩm: ${chiTiet.idSanPhamCT.idSanPham._id}")
+//                            Text("Tên sản phẩm: ${chiTiet.idSanPhamCT.idSanPham.tenSP}")
+//                            chiTiet.idSanPhamCT.Ram?.let {
+//                                Text("Kích thước: $it")
+//                            }
+//                            chiTiet.idSanPhamCT.MauSac?.let {
+//                                Text("Màu sắc: $it")
+//                            }
+//                            Text("Số lượng: ${chiTiet.SoLuongMua}")
+//                            chiTiet.TongTien?.let {
+//                                Text("Tổng tiền: ${it.toInt()} VNĐ")
+//                            }
+//                        }
+                        Column(modifier = Modifier.padding(3.dp)) {
+                            Row{
+                                // Hiển thị ảnh sản phẩm đầu tiên (nếu có)
+                                chiTiet.idSanPhamCT.idSanPham.anhSP?.firstOrNull()
+                                    ?.let { imageUrl ->
+                                        val fullImageUrl = "${AppConfig.ipAddress}$imageUrl"
+                                        Log.d("Image URL", "Image URL: $fullImageUrl")
+                                        AsyncImage(
+                                            model = fullImageUrl,
+                                            contentDescription = "Ảnh sản phẩm",
+                                            modifier = Modifier
+                                                .width(70.dp)
+                                                .height(70.dp)
+                                                .border(
+                                                    1.dp,
+                                                    Color.LightGray,
+                                                    RoundedCornerShape(5.dp)
+                                                )
+                                                .clip(RoundedCornerShape(5.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Column(
+                                    horizontalAlignment = Alignment.Start
+                                ) {
+                                    Text(
+                                        text = "${chiTiet.idSanPhamCT.idSanPham.tenSP}",
+                                        style = MaterialTheme.typography.body2,
+                                        color = Color.Black
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "${chiTiet.idSanPhamCT.idSanPham.idHangSP.TenHang}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                        Text(
+                                            text = "x${chiTiet.SoLuongMua}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = Color.Gray
+                                        )
+                                    }
+
+                                }
+                            }
+                            chiTiet.TongTien?.let {
+                                Text(
+                                    text = "Tổng tiền: ${it.toInt()} VNĐ",
+                                    style = MaterialTheme.typography.body2,
+                                    color = Color.Black,
+                                    modifier = Modifier.align(Alignment.End)
+                                )
+                            }
+                        }
+
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Đóng")
+            }
+        }
+    )
+}
 
 @Composable
 @Preview(showBackground = true)
 fun DeliveredOrderItemPreview() {
-    DeliveredOrderItem(
-        productImage = "https://laptop88.vn/media/product/pro_poster_8910.jpg",
-        productName = "Laptop Dell XPS 13",
-        quantity = 2,
-        originalPrice = 30000000.0,
-        discountedPrice = 25000000.0,
-        totalPrice = 50000000.0,
 
-        )
 }
 
