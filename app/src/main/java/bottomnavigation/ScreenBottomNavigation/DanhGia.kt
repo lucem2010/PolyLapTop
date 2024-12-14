@@ -71,6 +71,7 @@ fun DanhgiaScreenBasic(
 
     val result by viewModel.result.observeAsState()
 
+
     var selectedImagesUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val context = LocalContext.current
 
@@ -218,13 +219,26 @@ fun DanhgiaScreenBasic(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            LaunchedEffect(result) {
+                result?.let {
+                    if (it) {
+                        Toast.makeText(context, "Đánh giá thành công!", Toast.LENGTH_SHORT).show()
+                        mainNavController.navigate(Screen.BottomNav.route)
+                    } else {
+                        Toast.makeText(context, "Đánh giá thất bại!", Toast.LENGTH_SHORT).show()
+                    }
+                    viewModel.clearResult() // Đặt lại LiveData để tránh lặp thông báo
+                }
+            }
+
             ConfirmButton(
                 onConfirmClick = {
                     // Convert selected images URIs to File objects
                     val imageFiles = selectedImagesUris.mapNotNull { uri ->
                         uriToFile(context, uri)  // Chuyển đổi Uri thành File
                     }
-                    // Call taoDanhGia with necessary parameters
+
+                    // Call taoDanhGia với các tham số cần thiết
                     if (token != null) {
                         viewModel.taoDanhGia(
                             donHangId = donHangId,
@@ -235,16 +249,6 @@ fun DanhgiaScreenBasic(
                             hinhAnhFiles = imageFiles
                         )
                         Log.d("IDDDD", "Selected URI: $loggedInUser")
-                    }
-
-                    // Quan sát kết quả và hiển thị thông báo sau khi nhận kết quả
-                    result?.let {
-                        if (it) {
-                            Toast.makeText(context, "Đánh giá thành công!", Toast.LENGTH_SHORT).show()
-                            mainNavController.navigate(Screen.BottomNav.route)
-                        } else {
-                            Toast.makeText(context, "Đánh giá thất bại!", Toast.LENGTH_SHORT).show()
-                        }
                     }
                 }
             )

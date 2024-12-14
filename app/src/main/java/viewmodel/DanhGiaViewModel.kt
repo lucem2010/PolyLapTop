@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.RetrofitClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.DanhGia
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -40,6 +41,7 @@ class DanhGiaViewModel : ViewModel() {
             }
         }
     }
+
     fun createMultipartBodyList(files: List<File>): List<MultipartBody.Part> {
         return files.map { file ->
             val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
@@ -59,7 +61,7 @@ class DanhGiaViewModel : ViewModel() {
         diem: String,
         noiDung: String,
         hinhAnhFiles: List<File>
-    ){
+    ) {
         viewModelScope.launch {
             try {
                 val idUserBody = createRequestBody(idUser)
@@ -86,9 +88,14 @@ class DanhGiaViewModel : ViewModel() {
             } catch (e: Exception) {
                 _result.postValue(false)
                 Log.e("TaoDanhGia", "Lỗi: ${e.message}")
+            } finally {
+                delay(500) // Trì hoãn ngắn để đảm bảo LiveData được quan sát kịp thời
+                clearResult() // Reset lại LiveData để tránh lỗi thông báo 2 lần
             }
         }
     }
 
-
+    fun clearResult() {
+        _result.postValue(null) // Reset lại LiveData về null
+    }
 }
