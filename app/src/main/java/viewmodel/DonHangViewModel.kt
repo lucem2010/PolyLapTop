@@ -50,7 +50,7 @@ class DonHangViewModel : ViewModel() {
     }
 
     // Hàm gọi API lấy danh sách chi tiết đơn hàng cho từng đơn hàng
-     fun getChiTietDonHang(donHangId: String) {
+    fun getChiTietDonHang(donHangId: String) {
         viewModelScope.launch {
             try {
                 val response = apiService.getChiTietDonHang(donHangId)
@@ -67,33 +67,58 @@ class DonHangViewModel : ViewModel() {
         }
     }
 
-    private val _huyDonHangResult = MutableLiveData<Result<String>>()
-    val huyDonHangResult: LiveData<Result<String>> get() = _huyDonHangResult
+    private val _huyDonHangResult = MutableLiveData<Result<String>?>()
+    val huyDonHangResult: LiveData<Result<String>?> get() = _huyDonHangResult
 
     fun huyDonHang(donHangId: String, token: String) {
         viewModelScope.launch {
             try {
-                // Gọi API để hủy đơn hàng với token
                 val response = apiService.huyDonHang(donHangId, "Bearer $token")
-
                 if (response.isSuccessful) {
-                    // Xử lý nếu API trả về thành công
-                    _huyDonHangResult.value = Result.success("Đơn hàng đã được hủy thành công!")
+                    _huyDonHangResult.postValue(Result.success("Đơn hàng đã được hủy thành công!"))
+
+                    // Gọi lại API để cập nhật danh sách đơn hàng
+                    getDonHangList(token)
                 } else {
-                    // Xử lý nếu có lỗi từ phía server
-                    _huyDonHangResult.value = Result.failure(
-                        Exception("Hủy đơn hàng thất bại: ${response.errorBody()?.string()}")
-                    )
+                    val errorMessage = response.errorBody()?.string() ?: "Lỗi không xác định"
+                    _huyDonHangResult.postValue(Result.failure(Exception("Hủy đơn hàng thất bại: $errorMessage")))
                 }
             } catch (e: Exception) {
-                // Xử lý nếu có lỗi từ phía client (kết nối, cú pháp, v.v.)
-                _huyDonHangResult.value = Result.failure(
-                    Exception("Lỗi khi gọi API: ${e.message}")
-                )
+                _huyDonHangResult.postValue(Result.failure(Exception("Lỗi khi gọi API: ${e.message}")))
             }
         }
     }
 
+    // Hàm để reset trạng thái sau khi hoàn thành xử lý
+    fun resetHuyDonHangResult() {
+        _huyDonHangResult.postValue(null)
+    }
+
+
+
+
+    fun getDonHangList(token: String) {
+        viewModelScope.launch {
+            try {
+                // Gọi API để lấy danh sách đơn hàng
+                val response = apiService.getDonHang("Bearer $token")
+                if (response.isSuccessful) {
+                    val donHangResponse = response.body()
+                    val donHangList = donHangResponse?.data ?: emptyList()
+
+                    // Cập nhật danh sách đơn hàng vào LiveData
+                    _donHangLiveData.postValue(donHangList)
+                } else {
+                    // Xử lý lỗi từ phía server
+                    val errorMessage = response.errorBody()?.string() ?: "Unknown error"
+                    _errorLiveData.postValue("Lỗi khi lấy danh sách đơn hàng: $errorMessage")
+                }
+            } catch (e: Exception) {
+                // Xử lý lỗi từ phía client (kết nối, cú pháp, v.v.)
+                _errorLiveData.postValue("Lỗi khi gọi API: ${e.message}")
+            }
+        }
+    }
 
 
 }

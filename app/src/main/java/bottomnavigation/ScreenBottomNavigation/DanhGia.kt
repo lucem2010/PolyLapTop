@@ -223,8 +223,7 @@ fun DanhgiaScreenBasic(
                 result?.let {
                     if (it) {
                         Toast.makeText(context, "Đánh giá thành công!", Toast.LENGTH_SHORT).show()
-                        mainNavController.navigate(Screen.BottomNav.route)
-                    } else {
+                        mainNavController.popBackStack() // Quay lại màn hình trước đó                    } else {
                         Toast.makeText(context, "Đánh giá thất bại!", Toast.LENGTH_SHORT).show()
                     }
                     viewModel.clearResult() // Đặt lại LiveData để tránh lặp thông báo
@@ -382,7 +381,7 @@ fun TextInputField(text: String, onTextChange: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(50.dp)
             .clip(RoundedCornerShape(10.dp))
             .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
             .background(Color(0xFFF8F8F8)),

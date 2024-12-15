@@ -3,6 +3,7 @@ package bottomnavigation.ScreenBottomNavigation.Order
 import DonHang
 import android.annotation.SuppressLint
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +38,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -73,33 +77,48 @@ fun PendingOrdersScreen(
     donHangList: List<DonHang>,
     viewModel: DonHangViewModel
 ) {
-    if (donHangList.isEmpty()) {
-        Log.d("PendingOrdersScreen", "DonHang List is empty")
-    } else {
-        Log.d(
-            "PendingOrdersScreen",
-            "DonHang List: ${donHangList.joinToString(", ") { it.toString() }}"
-        )
+
+    val filteredList = remember(donHangList, searchQuery) {
+        mutableStateOf(filterOrdersByDate(donHangList, searchQuery))
     }
 
-    val filteredList = filterOrdersByDate(donHangList, searchQuery)
-    var selectedDonHang by remember { mutableStateOf<DonHang?>(null) } // State lưu đơn hàng đã chọn
-    val chiTietDonHangList by viewModel.chiTietDonHangLiveData.observeAsState(emptyList()) // Lắng nghe dữ liệu chi tiết đơn hàng
-    var showCancelDialog by remember { mutableStateOf<DonHang?>(null) } // State hiển thị dialog hủy
+
+
+
+    var selectedDonHang by remember { mutableStateOf<DonHang?>(null) }
+    val chiTietDonHangList by viewModel.chiTietDonHangLiveData.observeAsState(emptyList())
+    var showCancelDialog by remember { mutableStateOf<DonHang?>(null) }
     val context = LocalContext.current
     val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(viewModel.huyDonHangResult) {
+        viewModel.huyDonHangResult.observe(lifecycleOwner) { result ->
+            result?.onSuccess { message ->
+                if (message.isNotEmpty()) {
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            result?.onFailure { exception ->
+                Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
+            }
+
+            viewModel.resetHuyDonHangResult()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 10.dp, end = 10.dp)
     ) {
-        items(filteredList) { donHang ->
+        items(filteredList.value) { donHang ->  // Sử dụng filteredList đã được tính toán lại
             Card(
                 modifier = Modifier
                     .clickable {
-                        selectedDonHang = donHang // Lưu đơn hàng đã chọn
-                        viewModel.getChiTietDonHang(donHang._id) // Lấy chi tiết đơn hàng khi click vào item
+                        selectedDonHang = donHang
+                        viewModel.getChiTietDonHang(donHang._id)
                     }
                     .padding(vertical = 8.dp)
                     .fillMaxWidth(),
@@ -147,7 +166,7 @@ fun PendingOrdersScreen(
                     ) {
                         Button(
                             onClick = {
-                                showCancelDialog = donHang // Hiển thị dialog hủy đơn hàng
+                                showCancelDialog = donHang
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFF8774A)),
                             shape = RoundedCornerShape(5.dp)
@@ -163,15 +182,7 @@ fun PendingOrdersScreen(
         }
     }
 
-    // Dialog chi tiết đơn hàng
-    selectedDonHang?.let { donHang ->
-        ChiTietPendingDialog(
-            chiTietList = chiTietDonHangList,
-            onDismiss = { selectedDonHang = null }
-        )
-    }
-
-    // Dialog xác nhận hủy đơn hàng
+    // Xử lý hiển thị dialog xác nhận hủy đơn hàng
     showCancelDialog?.let { donHang ->
         AlertDialog(
             onDismissRequest = { showCancelDialog = null },
@@ -185,8 +196,10 @@ fun PendingOrdersScreen(
                 TextButton(
                     onClick = {
                         if (token != null) {
-                            viewModel.huyDonHang(donHang._id,token)
-                        } // Gọi hàm hủy đơn hàng
+                            viewModel.huyDonHang(donHang._id, token)
+                            // Cập nhật lại filteredList sau khi hủy đơn hàng
+                            filteredList.value = filteredList.value.filter { it._id != donHang._id }
+                        }
                         showCancelDialog = null
                     }
                 ) {
@@ -195,17 +208,38 @@ fun PendingOrdersScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        showCancelDialog = null
-                    }
+                    onClick = { showCancelDialog = null }
                 ) {
                     Text(text = "Hủy")
                 }
             }
         )
     }
+
+    // Xử lý hiển thị chi tiết đơn hàng
+    selectedDonHang?.let { donHang ->
+        ChiTietPendingDialog(
+            chiTietList = chiTietDonHangList,
+            onDismiss = { selectedDonHang = null }
+        )
+    }
 }
 
+
+
+
+fun filterOrdersByDate(orders: List<DonHang>, searchQuery: String): List<DonHang> {
+    if (searchQuery.isEmpty()) return orders
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return try {
+        orders.filter { donHang ->
+            val orderDate = dateFormat.format(donHang.NgayDatHang)
+            orderDate.contains(searchQuery, ignoreCase = true)
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
 @Composable
 fun ChiTietPendingDialog(
     chiTietList: List<DonHangCT>,
@@ -296,20 +330,6 @@ fun ChiTietPendingDialog(
         }
     )
 }
-
-fun filterOrdersByDate(orders: List<DonHang>, searchQuery: String): List<DonHang> {
-    if (searchQuery.isEmpty()) return orders
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    return try {
-        orders.filter { donHang ->
-            val orderDate = dateFormat.format(donHang.NgayDatHang)
-            orderDate.contains(searchQuery, ignoreCase = true)
-        }
-    } catch (e: Exception) {
-        emptyList()
-    }
-}
-
 
 @Composable
 @Preview(showBackground = true)

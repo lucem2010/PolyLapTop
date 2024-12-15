@@ -53,12 +53,13 @@ android {
 
 dependencies {
     implementation(libs.androidx.runtime.livedata)
+
+    implementation(libs.billing)
     implementation(fileTree(mapOf(
-        "dir" to "D:\\DATN\\New folder\\PolyLapTop\\app\\Zalo",
+        "dir" to "D:\\lapTrinhMobile\\DATN\\PolyLapTop\\app\\Zalo",
         "include" to listOf("*.aar", "*.jar"),
         "exclude" to listOf("")
     )))
-    implementation(libs.billing)
     val sheetsVersion = "1.1.1"
     implementation ("androidx.security:security-crypto:1.0.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
