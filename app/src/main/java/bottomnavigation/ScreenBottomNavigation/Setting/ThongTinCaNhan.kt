@@ -1,6 +1,7 @@
 package bottomnavigation.ScreenBottomNavigation.Setting
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.Settings
 import android.util.Log
@@ -27,10 +28,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.SnackbarDefaults
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.darkColors
@@ -38,14 +41,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.lightColors
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -60,12 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -76,8 +69,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import com.example.polylaptop.R
+import model.AppConfig
 import model.District
 import model.Province
 import model.SharedPrefsManager
@@ -85,19 +79,19 @@ import model.User
 import model.Ward
 import viewmodel.LocationViewModel
 import viewmodel.UserViewModel
-import java.util.Calendar
-
 
 @Composable
 fun ThongTinCaNhan(
     navController: NavController,
     viewModel: UserViewModel,
-    viewModelLocation: LocationViewModel = viewModel()
+    viewModelLocation: LocationViewModel = viewModel(),
 ) {
     val context = LocalContext.current
     val (loggedInUser, token) = SharedPrefsManager.getLoginInfo(context)
     val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
     val backgroundColor = if (isDarkTheme) Color(0xff898989) else Color.White
+    var avatarUrl by remember { mutableStateOf<String?>(loggedInUser?.Avatar) } // Trạng thái avatar URL
+
     MaterialTheme(
         colors = if (isDarkTheme) darkColors() else lightColors()
     ) {
@@ -110,9 +104,7 @@ fun ThongTinCaNhan(
         ) {
             Header(navController = navController, viewModel)
             if (loggedInUser != null && token != null) {
-                UploadAvatar(viewModel, loggedInUser, token)
                 ProfileCard(
-                    navController = navController,
                     viewModel = viewModel,
                     viewModelLocation = viewModelLocation,
                     loggedInUser, token
@@ -167,396 +159,298 @@ fun Header(navController: NavController, viewModel: UserViewModel) {
     }
 }
 
-///Upload Avatar
-@Composable
-fun UploadAvatar(viewModel: UserViewModel, loggedInUser: User, token: String) {
-    val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
-    val backgroundColor = if (isDarkTheme) Color(0x991E1E1E) else Color.White
-    val borderColor = if (isDarkTheme) Color.LightGray else Color(0xFFF8774A)
 
-    var avatarUri = remember { mutableStateOf<Uri?>(null) } // Avatar từ thư viện
-    val context = LocalContext.current
-    var isImageUpdated by remember { mutableStateOf(false) } // Trạng thái khi thay đổi ảnh
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let {
-            try {
-                // Kiểm tra URI
-                val inputStream = context.contentResolver.openInputStream(uri)
-                inputStream?.close()
-                avatarUri.value = uri
-                isImageUpdated = true
-
-                // Cập nhật Avatar của người dùng
-                val updatedUser = loggedInUser.copy(Avatar = uri.toString())
-                Log.d("UpdatedUser", "Thông tin người dùng đã cập nhật: $updatedUser")
-                viewModel.updateUser(token, updatedUser)
-            } catch (e: Exception) {
-                Log.e("ImageError", "Lỗi khi truy cập ảnh từ thư viện: ${e.message}")
-                Toast.makeText(context, "Không thể mở ảnh, vui lòng thử lại.", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        } ?: run {
-            Log.e("ImageError", "URI ảnh không hợp lệ")
-            Toast.makeText(context, "Không có ảnh nào được chọn", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    Column(
-        modifier = Modifier.padding(40.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(150.dp)
-                .clickable {
-                    galleryLauncher.launch("image/*")
-                }
-        ) {
-            if (isImageUpdated) {
-                avatarUri.value?.let { uri ->
-                    // Hiển thị ảnh từ thư viện
-                    Image(
-                        painter = rememberAsyncImagePainter(uri),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape)
-                            .background(backgroundColor),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            } else if (loggedInUser.Avatar.isNullOrEmpty()) {
-                // Hiển thị ảnh mặc định nếu Avatar là null hoặc rỗng
-                Image(
-                    painter = painterResource(id = R.drawable.img1),
-                    contentDescription = "Default Profile Picture",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .border(2.dp, borderColor, CircleShape)
-                        .background(backgroundColor),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                // Hiển thị ảnh từ đường dẫn trong Avatar
-                Image(
-                    painter = rememberAsyncImagePainter(loggedInUser.Avatar),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(CircleShape)
-                        .background(backgroundColor),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-    }
-}
-
-///Update Thong tin ca nhan(Ho va ten, Email, SDT, Tuoi, DiaChi, DiaChiCT)
 @Composable
 fun ProfileCard(
-    navController: NavController,
     viewModel: UserViewModel = viewModel(),
     viewModelLocation: LocationViewModel = viewModel(),
     loggedInUser: User,
     token: String
 ) {
-    val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
-    val textColor = if (isDarkTheme) Color.White else Color.Black
-
-    // Dữ liệu hiển thị (tên tỉnh/quận/phường đã chọn)
-//    val selectedProvinceName by viewModelLocation.selectedProvinceName.collectAsState(initial = "Chưa cập nhật")
-//    val selectedDistrictName by viewModelLocation.selectedDistrictName.collectAsState(initial = "Chưa cập nhật")
-//    val selectedWardName by viewModelLocation.selectedWardName.collectAsState(initial = "Chưa cập nhật")
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
-    ) {
-        // Text họ và tên
-        Text(
-            text = "Họ và tên: ${loggedInUser.HoTen ?: "Chưa cập nhật"}",
-            fontSize = 14.sp,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Text email
-        Text(
-            text = "Email: ${loggedInUser.Email ?: "Chưa cập nhật"}",
-            fontSize = 14.sp,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Text số điện thoại
-        Text(
-            text = "Số điện thoại: ${loggedInUser.Sdt ?: "Chưa cập nhật"}",
-            fontSize = 14.sp,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Text tuổi
-        Text(
-            text = "Tuổi: ${loggedInUser.Tuoi ?: "Chưa cập nhật"}",
-            fontSize = 14.sp,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Text địa chỉ
-        Text(
-            text = "Địa chỉ: ${loggedInUser.DiaChi ?: "Chưa cập nhật"} ",
-            fontSize = 14.sp,
-            color = textColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Button Cập nhật lưu thông tin
-        ButtonCapNhat(navController, viewModel, loggedInUser, token)
-    }
-}
-
-
-@Composable
-fun ButtonCapNhat(
-    navController: NavController,
-    viewModel: UserViewModel = viewModel(),
-    loggedInUser: User,
-    token: String,
-    viewModelLocation: LocationViewModel = viewModel(),
-) {
+    val context = LocalContext.current
     val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
     val textDialogColor = if (isDarkTheme) Color.Black else Color.Black
-    val borderColor = if (isDarkTheme) Color.LightGray else Color(0xFFF8774A)
 
-    var showDialogCapNhatThongTin by remember { mutableStateOf(false) }
-    var fullName by remember { mutableStateOf(loggedInUser?.HoTen ?: "") }
-    var email by remember { mutableStateOf(loggedInUser?.Email ?: "") }
-    var phoneNumber by remember { mutableStateOf(loggedInUser?.Sdt ?: "") }
+    // Đảm bảo giá trị người dùng được lấy từ SharedPreferences khi màn hình load lại
+    var fullName by remember { mutableStateOf(loggedInUser.HoTen ?: "") }
+    var email by remember { mutableStateOf(loggedInUser.Email ?: "") }
+    var phoneNumber by remember { mutableStateOf(loggedInUser.Sdt ?: "") }
+    var tuoi by remember { mutableStateOf(loggedInUser.Tuoi?.toString() ?: "") }
+    var diaChiTiet by remember { mutableStateOf(loggedInUser.DiaChi ?: "") }
 
-    var tuoi by remember { mutableStateOf(loggedInUser?.Tuoi?.toString() ?: "") }
+    var avatarUri by remember { mutableStateOf<Uri?>(null) } // Avatar từ thư viện
+    var avatarUrl by remember { mutableStateOf<String?>(loggedInUser.Avatar) }
 
     // Các biến lưu trữ thông tin Tỉnh, Quận, Phường
     var selectedProvince by remember { mutableStateOf<Province?>(null) }
     var selectedDistrict by remember { mutableStateOf<District?>(null) }
     var selectedWard by remember { mutableStateOf<Ward?>(null) }
 
+    val selectedProvinceName by viewModelLocation.selectedProvinceName.collectAsState()
+    val selectedDistrictName by viewModelLocation.selectedDistrictName.collectAsState()
+    val selectedWardName by viewModelLocation.selectedWardName.collectAsState()
 
     val provinces by viewModelLocation.provinces.collectAsState()
     val districts by viewModelLocation.districts.collectAsState()
     val wards by viewModelLocation.wards.collectAsState()
-    val addressParts = loggedInUser.DiaChi?.split(",")?.map { it.trim() }
-    var diaChiTiet by remember { mutableStateOf(addressParts?.getOrNull(0) ?: "") }
-    // Ensure that provinces are fetched first
-    LaunchedEffect(Unit) {
-        viewModelLocation.fetchProvinces()
-    }
 
 
-
-
-    Row(
-        modifier = Modifier.padding(20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Button(
-            onClick = {
-                showDialogCapNhatThongTin = true
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = borderColor
-            ),
-            shape = RoundedCornerShape(5.dp),
-        ) {
-            Text(
-                text = "Cập nhật",
-                color = if (isDarkTheme) Color.Black else Color.White
-            )
+    LaunchedEffect(selectedProvince) {
+        selectedDistrict = null
+        selectedWard = null
+        selectedProvince?.let { province ->
+            viewModelLocation.fetchDistricts(province.ProvinceID)
         }
     }
 
-    if (showDialogCapNhatThongTin) {
-        AlertDialog(
-            onDismissRequest = { showDialogCapNhatThongTin = false },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Cập nhật thông tin",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-
-                    OutlinedTextField(
-                        value = fullName,
-                        onValueChange = { fullName = it },
-                        label = { Text(text = "Họ và Tên") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text(text = "Email") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = phoneNumber,
-                        onValueChange = { phoneNumber = it },
-                        label = { Text(text = "Số điện thoại") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = tuoi,
-                        onValueChange = { tuoi = it },
-                        label = { Text(text = "Tuổi") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        singleLine = true
-                    )
-                    // Dropdown cho Tỉnh/Thành phố
-                    // Wait for provinces to load, then show the dropdown
-                    if (provinces.isNotEmpty()) {   // Dropdown for selecting Province
-
-                        val provinceName = addressParts?.getOrNull(3) ?: ""
-                        selectedProvince = provinces.find { it.ProvinceName == provinceName }
-                            ?: provinces.firstOrNull()
-
-                        DropdownMenuWithSelection(
-                            items = provinces,
-                            selectedItem = selectedProvince?.ProvinceName
-                                ?: "lôi lỗi", // Show empty if no selection
-                            onItemSelected = { province ->
-                                selectedProvince = province
-                                viewModelLocation.selectProvince(province)
-                            },
-                            label = "Chọn Tỉnh/Thành phố",
-                            itemContent = { province ->
-                                Text(text = province.ProvinceName, color = Color.Black)
-                            },
-                            viewModel = viewModel
-                        )
-                    } else {
-                        // Optionally show a loading indicator
-                        Text(text = "Loading provinces...")
-                    }
-
-                    if (selectedProvince != null) {
-                        viewModelLocation.fetchDistricts(selectedProvince!!.ProvinceID)
-                        val districtName = addressParts?.getOrNull(2) ?: ""
-                        selectedDistrict = districts.find { it.DistrictName == districtName }
-                            ?: districts.firstOrNull()
-                        // Dropdown menu cho Quận/Huyện
-                        DropdownMenuWithSelection(
-                            items = districts,
-                            selectedItem = selectedDistrict?.DistrictName.toString() ?: "",
-                            onItemSelected = { district ->
-                                selectedDistrict = district
-                                viewModelLocation.selectDistrict(district)
-                            },
-                            label = "Chọn Quận/Huyện",
-                            itemContent = { district ->
-                                Text(
-                                    text = district.DistrictName,
-                                    color = textDialogColor
-                                )
-                            },
-                            viewModel = viewModel
-                        )
-                    }
-
-
-                    if (selectedDistrict != null) {
-                        viewModelLocation.fetchWards(selectedDistrict!!.DistrictID)
-                        val WardName = addressParts?.getOrNull(1) ?: ""
-                        selectedWard = wards.find { it.WardName == WardName }
-                            ?: wards.firstOrNull()
-
-                        // Dropdown menu cho Phường/Xã
-                        DropdownMenuWithSelection(
-                            items = wards,
-                            selectedItem = selectedWard?.WardName.toString() ?: "",
-                            onItemSelected = { ward ->
-                                selectedWard = ward
-                                viewModelLocation.selectWard(ward)
-                            },
-                            label = "Chọn Phường/Xã",
-                            itemContent = { ward ->
-                                Text(
-                                    text = ward.WardName,
-                                    color = textDialogColor
-                                )
-                            },
-                            viewModel = viewModel
-                        )
-
-                    }
-
-
-                    OutlinedTextField(
-                        value = diaChiTiet,
-                        onValueChange = { diaChiTiet = it },
-                        label = { Text(text = "Địa chỉ chi tiết") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    showDialogCapNhatThongTin = false
-                    // Xử lý cập nhật thông tin
-                }) {
-                    Text("Lưu")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showDialogCapNhatThongTin = false }) {
-                    Text("Hủy")
-                }
+    LaunchedEffect(selectedDistrictName) {
+        selectedDistrictName?.let { districtName ->
+            val newDistrict = districts.find { it.DistrictName == districtName }
+            if (newDistrict != selectedDistrict) {
+                selectedDistrict = newDistrict
+                viewModelLocation.fetchWards(newDistrict?.DistrictID ?: 0)
             }
-        )
+        }
     }
 
+    LaunchedEffect(viewModelLocation.wards.collectAsState().value) {
+        val firstWard = viewModelLocation.wards.value.firstOrNull()
+        firstWard?.let {
+            selectedWard = it
+            viewModelLocation.selectWard(it)
+        }
+    }
+
+    LaunchedEffect(selectedWardName) {
+        selectedWardName?.let {
+            selectedWard = wards.find { it.WardName == selectedWardName }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val addressParts = loggedInUser.DiaChi?.split(",")?.map { it.trim() }
+        val detailAddress = addressParts?.getOrNull(0) ?: ""
+        val wardName = addressParts?.getOrNull(1) ?: ""
+        val districtName = addressParts?.getOrNull(2) ?: ""
+        val provinceName = addressParts?.getOrNull(3) ?: ""
+        diaChiTiet = detailAddress
+        viewModelLocation.updateSelectedProvince(provinceName)
+        viewModelLocation.updateSelectedDistrict(districtName)
+        viewModelLocation.updateSelectedWard(wardName)
+    }
+
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            val contentResolver = context.contentResolver
+            val mimeType = contentResolver.getType(it)
+
+            // Kiểm tra MIME type
+            if (mimeType == null || !mimeType.startsWith("image/")) {
+                Toast.makeText(context, "Vui lòng chọn file hình ảnh.", Toast.LENGTH_SHORT).show()
+                return@let
+            }
+
+            // Kiểm tra nếu ảnh không thay đổi
+            if (avatarUri == it) {
+                Toast.makeText(context, "Ảnh này đã được chọn trước đó.", Toast.LENGTH_SHORT).show()
+                return@let
+            }
+
+            avatarUri = it
+            Log.d("ImageSelection", "Image selected: $it")
+
+            // Kiểm tra token
+            if (token.isBlank()) {
+                Toast.makeText(context, "Token không hợp lệ. Vui lòng đăng nhập lại.", Toast.LENGTH_SHORT).show()
+                return@let
+            }
+
+            viewModel.uploadAvatar(
+                context = context,
+                token = token,
+                avatarUri = it,
+                onSuccess = { uploadedAvatarUrl ->
+                    avatarUrl = uploadedAvatarUrl // Cập nhật lại URL avatar
+                    Log.d("AvatarUpload", "Avatar URL updated: $avatarUrl") // Log để kiểm tra giá trị mới
+                    Toast.makeText(context, "Tải lên thành công: $uploadedAvatarUrl", Toast.LENGTH_SHORT).show()
+                },
+                onError = { error ->
+                    Toast.makeText(context, "Lỗi tải lên: $error", Toast.LENGTH_SHORT).show()
+                }
+            )
+        } ?: run {
+            Toast.makeText(context, "Không có hình ảnh nào được chọn", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 40.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
+    ) {
+        // Avatar selection
+        Box(
+            modifier = Modifier
+                .size(150.dp)
+                .clip(CircleShape)
+                .background(Color.Gray)
+                .clickable { galleryLauncher.launch("image/*") }
+        ) {
+
+            val ipAddress = AppConfig.ipAddress // Địa chỉ IP từ AppConfig
+            val defaultAvatarUrl = "$ipAddress/defaultAvatar.png" // URL của ảnh mặc định
+            val imageUrl = avatarUrl?.let { "$ipAddress$it" } ?: defaultAvatarUrl // Cập nhật URL avatar mới
+
+// Hiển thị hình ảnh avatar từ URL nếu có, nếu không sẽ hiển thị ảnh mặc định
+            AsyncImage(
+                model = imageUrl, // Hiển thị avatar từ URL mới
+                contentDescription = "User Avatar",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(150.dp)
+                    .clip(CircleShape)
+                    .background(SnackbarDefaults.backgroundColor),
+
+            )
+
+
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Editable fields
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Họ và Tên") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+        )
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+        )
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Số điện thoại") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+        )
+        OutlinedTextField(
+            value = tuoi,
+            onValueChange = { tuoi = it },
+            label = { Text("Tuổi") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+        )
+
+        // Dropdown for Province
+        DropdownMenuWithSelection(
+            items = provinces,
+            selectedItem = selectedProvinceName,
+            onItemSelected = { province -> viewModelLocation.selectProvince(province) },
+            itemContent = { province ->
+                Text(
+                    text = province.ProvinceName,
+                    color = textDialogColor
+                )
+            },
+            viewModel = viewModel,
+        )
+
+        // Dropdown for District
+        DropdownMenuWithSelection(
+            items = districts,
+            selectedItem = selectedDistrictName,
+            onItemSelected = { district -> viewModelLocation.selectDistrict(district) },
+            itemContent = { district ->
+                Text(
+                    text = district.DistrictName,
+                    color = textDialogColor
+                )
+            },
+            viewModel = viewModel,
+        )
+
+        // Dropdown for Ward
+        DropdownMenuWithSelection(
+            items = wards,
+            selectedItem = selectedWardName,
+            onItemSelected = { ward -> viewModelLocation.selectWard(ward) },
+            itemContent = { ward -> Text(text = ward.WardName, color = textDialogColor) },
+            viewModel = viewModel,
+        )
+
+        OutlinedTextField(
+            value = diaChiTiet,
+            onValueChange = { diaChiTiet = it },
+            label = { Text("Địa chỉ chi tiết") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = {
+                if (fullName.isNotEmpty() && email.isNotEmpty() && phoneNumber.isNotEmpty()) {
+                    // Cập nhật thông tin người dùng
+                    val updatedUser = loggedInUser.copy(
+                        HoTen = fullName,
+                        Email = email,
+                        Sdt = phoneNumber,
+                        Tuoi = tuoi.toIntOrNull(),
+                        DiaChi = "$diaChiTiet, $selectedWardName, $selectedDistrictName, $selectedProvinceName"
+                    )
+
+                    // Chỉ cập nhật người dùng
+                    viewModel.updateUser(
+                        token = token,
+                        user = updatedUser,
+                        onSuccess = {
+                            Toast.makeText(
+                                context,
+                                "Thông tin đã được lưu!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            SharedPrefsManager.saveLoginInfo(context, updatedUser, token)
+                        },
+                        onError = {
+                            Toast.makeText(
+                                context,
+                                "Lỗi khi cập nhật thông tin người dùng.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
+                } else {
+                    Toast.makeText(context, "Vui lòng điền đầy đủ thông tin.", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+        ) {
+            Text("Lưu")
+        }
+    }
 }
 
 
@@ -567,12 +461,12 @@ fun <T> DropdownMenuWithSelection(
     onItemSelected: (T) -> Unit,
     itemContent: @Composable (T) -> Unit,
     label: String = "Chọn...",
-    viewModel: UserViewModel
+    viewModel: UserViewModel,
 ) {
     val isDarkTheme by viewModel.isDarkTheme.observeAsState(false)
-    var expanded by remember { mutableStateOf(false) }
     val textDialogColor = if (isDarkTheme) Color.Black else Color.Black
     val borderDialogColor = if (isDarkTheme) Color(0x99AcACAC) else Color.Gray
+    var expanded by remember { mutableStateOf(false) }
     // TextField để hiển thị selected item, với biểu tượng dropdown
     Row(
         modifier = Modifier
@@ -601,20 +495,19 @@ fun <T> DropdownMenuWithSelection(
                     contentDescription = "Dropdown"
                 )
             },
-
-            )
-    }
-    // DropdownMenu để hiển thị các lựa chọn
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
-    ) {
-        items.forEach { item ->
-            DropdownMenuItem(onClick = {
-                onItemSelected(item)
-                expanded = false
-            }) {
-                itemContent(item)
+        )
+        // DropdownMenu để hiển thị các lựa chọn
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            items.forEach { item ->
+                DropdownMenuItem(onClick = {
+                    onItemSelected(item)
+                    expanded = false
+                }) {
+                    itemContent(item)
+                }
             }
         }
     }
@@ -625,4 +518,3 @@ fun <T> DropdownMenuWithSelection(
 fun ThongTinCaNhanPreview() {
     ThongTinCaNhan(navController = rememberNavController(), viewModel = UserViewModel())
 }
-

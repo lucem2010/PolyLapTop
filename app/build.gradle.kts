@@ -56,10 +56,11 @@ dependencies {
 
     implementation(libs.billing)
     implementation(fileTree(mapOf(
-        "dir" to "G:\\ImageFile\\fileZip\\PolyLapTop-tanh\\app\\Zalo",
+        "dir" to "D:\\lapTrinhMobile\\DATN\\PolyLapTop\\app\\Zalo",
         "include" to listOf("*.aar", "*.jar"),
         "exclude" to listOf("")
     )))
+
 
     val sheetsVersion = "1.1.1"
     implementation ("androidx.security:security-crypto:1.0.0")

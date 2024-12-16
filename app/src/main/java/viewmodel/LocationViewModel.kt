@@ -101,4 +101,19 @@ class LocationViewModel : ViewModel() {
     fun selectWard(ward: Ward) {
         _selectedWardName.value = ward.WardName
     }
+    // Cập nhật tên tỉnh đã chọn
+    fun updateSelectedProvince(provinceName: String?) {
+        _selectedProvinceName.value = provinceName
+
+    }
+
+    // Cập nhật tên quận/huyện đã chọn
+    fun updateSelectedDistrict(districtName: String?) {
+        _selectedDistrictName.value = districtName
+    }
+
+    // Cập nhật tên phường/xã đã chọn
+    fun updateSelectedWard(wardName: String?) {
+        _selectedWardName.value = wardName
+    }
 }

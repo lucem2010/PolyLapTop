@@ -2,6 +2,7 @@ package viewmodel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +17,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import model.SharedPrefsManager
 import model.User
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 
 class UserViewModel : ViewModel() {
 
@@ -23,8 +27,10 @@ class UserViewModel : ViewModel() {
     // LiveData để theo dõi trạng thái cập nhật
     private val _updateUserStatus = MutableLiveData<Result<Boolean>>()
     val updateUserStatus: LiveData<Result<Boolean>> get() = _updateUserStatus
-
-    fun updateUser(token: String, user: User) {
+    private val _loggedInUser = MutableLiveData<User>()
+    val loggedInUser: LiveData<User> get() = _loggedInUser
+    // Phương thức cập nhật người dùng
+    fun updateUser(token: String, user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 // Log thông tin đầu vào
@@ -41,22 +47,87 @@ class UserViewModel : ViewModel() {
 
                 // Kiểm tra phản hồi từ API
                 if (response.isSuccessful) {
-                    // Nếu thành công, cập nhật LiveData
                     Log.d("UpdateUser", "Update Successful")
                     _updateUserStatus.postValue(Result.success(true))
+                    _loggedInUser.value = user // Cập nhật người dùng trong ViewModel
+                    onSuccess()
                 } else {
                     // Nếu không thành công, cập nhật LiveData với lỗi
                     val errorMessage = "Update failed: ${response.message()}"
                     Log.e("UpdateUser", errorMessage)
                     _updateUserStatus.postValue(Result.failure(Throwable(errorMessage)))
+                    onError(errorMessage)
                 }
             } catch (e: Exception) {
                 // Log lỗi xảy ra
                 Log.e("UpdateUser", "Exception: ${e.message}", e)
-
                 // Xử lý ngoại lệ và cập nhật LiveData
                 _updateUserStatus.postValue(Result.failure(e))
+                onError(e.localizedMessage ?: "An error occurred")
             }
+        }
+    }
+
+    // Phương thức để tải lên avatar
+    fun uploadAvatar(
+        context: Context,
+        token: String,
+        avatarUri: Uri?,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        avatarUri?.let { uri ->
+            // Kiểm tra URI hợp lệ
+            if (uri.scheme != "content" && uri.scheme != "file") {
+                onError("Uri avatar không hợp lệ hoặc không được hỗ trợ.")
+                return
+            }
+
+            // Chuyển đổi Uri thành File
+            val avatarFile = SharedPrefsManager.uriToFile(context, uri)
+            avatarFile?.let { file ->
+                // Kiểm tra kích thước file
+                if (file.length() > 5 * 1024 * 1024) { // Giới hạn 5MB
+                    onError("File quá lớn. Vui lòng chọn file nhỏ hơn 5MB.")
+                    return
+                }
+
+                viewModelScope.launch {
+                    try {
+                        Log.d("UploadAvatar", "Starting upload for file: ${file.name}")
+
+                        // Chuẩn bị request body
+                        val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+                        val multipartFile =
+                            MultipartBody.Part.createFormData("avatar", file.name, requestBody)
+
+                        // Gửi yêu cầu upload
+                        val response = RetrofitClient.apiService.uploadAvatar("Bearer $token", multipartFile)
+
+                        if (response.isSuccessful) {
+                            val avatarUrl = response.body()?.data
+                            Log.d("UploadAvatar", "Upload success: $avatarUrl")
+
+                            if (avatarUrl != null) {
+                                onSuccess(avatarUrl)
+                            } else {
+                                onError("Không lấy được URL ảnh.")
+                            }
+                        } else {
+                            val error = response.errorBody()?.string() ?: "Lỗi không xác định"
+                            Log.e("UploadAvatar", "Upload failed: $error")
+                            onError("Lỗi từ server: $error")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("UploadAvatar", "Exception during upload: ${e.message}")
+                        onError(e.message ?: "Unknown exception")
+                    }
+                }
+            } ?: run {
+                onError("Không thể chuyển đổi Uri thành File.")
+            }
+        } ?: run {
+            onError("Uri avatar không hợp lệ.")
         }
     }
 
