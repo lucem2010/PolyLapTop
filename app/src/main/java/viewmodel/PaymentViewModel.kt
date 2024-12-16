@@ -3,6 +3,7 @@ package viewmodel
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 
 import android.widget.Toast
 
@@ -71,9 +72,11 @@ class PaymentViewModel: ViewModel() {
                     Toast.makeText(context, "${response.body()?.message}", Toast.LENGTH_SHORT).show()
                     onSuccess()
                 } else {
+                    Log.e("ERRR", "thanhToanOffline: ${response.body()?.message}" )
                     Toast.makeText(context,"Lỗi: ${response.body()?.message}",Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                Log.e("ERRR", "thanhToanOffline: ${e.message}" )
                 Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }

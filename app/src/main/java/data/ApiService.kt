@@ -1,6 +1,7 @@
 package data
 
 import DonHang
+import kotlinx.serialization.json.JsonElement
 import model.ChiTietSanPham
 import model.DanhGia
 import model.DonHangCT
@@ -150,7 +151,7 @@ interface ApiService {
     suspend fun ThanhToan(
         @Header("Authorization") token: String,
         @Body request: ThanhToanRequest
-    ): Response<DonHangResponse>
+    ): Response<DonHangResponse2>
 
     data class SendMessageRequest(
         val chatId: String,
@@ -189,9 +190,14 @@ interface ApiService {
     @POST("/chat/contact")
     suspend fun contactMessage(@Header("Authorization") token:String): Response<ChatResponse>
 
+    data class DonHangResponse2(
+        val message: String
+
+    )
+
     data class DonHangResponse(
         val message: String,
-        val data: List<DonHang>
+        val data:  List<DonHang>
     )
 
     data class ChiTietDonHangResponse(
