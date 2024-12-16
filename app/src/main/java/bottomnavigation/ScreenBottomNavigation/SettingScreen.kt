@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
@@ -45,20 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.polylaptop.R
-import com.example.polylaptop.ui.theme.DarkBackgroundColor
-import com.example.polylaptop.ui.theme.DarkBorderColor
-import com.example.polylaptop.ui.theme.DarkBorderColorAvatar
-import com.example.polylaptop.ui.theme.DarkButtonColor
-import com.example.polylaptop.ui.theme.DarkTextColor
-import com.example.polylaptop.ui.theme.LightBackgroundColor
-import com.example.polylaptop.ui.theme.LightBorderColor
-import com.example.polylaptop.ui.theme.LightBorderColorAvatar
-import com.example.polylaptop.ui.theme.LightButtonColor
-import com.example.polylaptop.ui.theme.LightTextColor
+import model.AppConfig
 import model.Screen
 import model.SharedPrefsManager
 import viewmodel.UserViewModel
@@ -79,8 +71,6 @@ fun SettingScreen(
     val backgroundColorButton = if (isDarkTheme) Color.Gray else Color(0xFFF8774A)
     val backgroundColor = if (isDarkTheme) Color(0xff898989) else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.Black
-    val borderColor = if (isDarkTheme) Color.LightGray else Color(0xFFF8774A)
-    val borderColorAvatar = if (isDarkTheme) Color.LightGray else Color(0xFFF8774A)
     MaterialTheme(
         colors = if (isDarkTheme) darkColors() else lightColors()
     ) {
@@ -95,17 +85,34 @@ fun SettingScreen(
                     .fillMaxWidth()
                     .padding(top = 70.dp, start = 30.dp)
             ) {
-                val defaultAvatar = R.drawable.img1 // Ảnh mặc định
-
+                val avatarUrl = loggedInUser?.Avatar // Lấy đường dẫn avatar từ đối tượng người dùng
+                // Lấy địa chỉ IP của máy chủ
+                val ipAddress = AppConfig.ipAddress  // Địa chỉ IP từ AppConfig
+                // Tạo URL đầy đủ cho avatar
+                val fullAvatarUrl = if (avatarUrl != null && avatarUrl.isNotEmpty()) {
+                    // Nếu có avatarUrl, kết hợp với địa chỉ IP hoặc URL
+                    "$ipAddress$avatarUrl" // Kết hợp địa chỉ IP và đường dẫn avatar
+                } else {
+                    // Nếu không có avatarUrl, dùng ảnh mặc định
+                    null
+                }
                 if (loggedInUser != null) {
-                    Image(
-                        painter = painterResource(
-                            id = if (loggedInUser.Avatar.isNullOrBlank()) defaultAvatar else R.drawable.img1 // Thay bằng phương pháp tải ảnh nếu Avatar không rỗng
-                        ),
-                        contentDescription = "Profile Image",
-                        modifier = Modifier.size(70.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(CircleShape)
+                            .background(Color.Gray)
+                    ) {
+                        AsyncImage(
+                            model = fullAvatarUrl ?: R.drawable.img1, // Nếu fullAvatarUrl là null, sử dụng ảnh mặc định
+                            contentDescription = "User Avatar", // Mô tả cho hình ảnh
+                            contentScale = ContentScale.Crop, // Cắt ảnh cho phù hợp với vùng hiển thị
+                            modifier = Modifier
+                                .size(150.dp)
+                                .clip(CircleShape) // Định dạng ảnh tròn
+                                .background(Color.Gray), // Màu nền khi ảnh chưa tải xong
+                        )
+                    }
                     Spacer(modifier = Modifier.width(20.dp))
                     Column(
                         verticalArrangement = Arrangement.Center
@@ -115,21 +122,17 @@ fun SettingScreen(
                             text = if (loggedInUser.HoTen.isNullOrBlank()) "Xin chào" else loggedInUser.HoTen,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = textColor,
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 15.dp)
                         )
                         Text(
                             text = if (loggedInUser.Email.isNullOrBlank()) "Poly Laptop" else loggedInUser.Email,
                             fontSize = 15.sp,
-                            color = textColor,
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 10.dp, bottom = 15.dp)
                         )
                     }
-                    // Hiển thị email hoặc "Poly Laptop" nếu trống
-
                 }
-
-
             }
             Box(
                 modifier = Modifier
@@ -278,7 +281,6 @@ fun SettingScreen(
                         )
                     }
                 }
-
                 // Hiển thị AlertDialog khi showLogoutDialog = true
                 if (showLogoutDialog) {
                     AlertDialog(
@@ -313,7 +315,6 @@ fun SettingScreen(
                                         }
                                     )
                                 }
-
                             }) {
                                 Text("Có", color = Color.Red)
                             }

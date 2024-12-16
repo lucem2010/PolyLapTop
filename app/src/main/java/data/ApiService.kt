@@ -247,4 +247,14 @@ interface ApiService {
         @Part hinhAnh: List<MultipartBody.Part> // Truyền danh sách MultipartBody.Part
     ): Response<Any>
 
+    data class UploadAvatarResponse(
+        val message: String,
+        val data: String // Đường dẫn tới avatar trả về
+    )
+    @Multipart
+    @PUT("auth/upload-avatar")  // Thay @POST thành @PUT
+    suspend fun uploadAvatar(
+        @Header("Authorization") token: String, // Token xác thực
+        @Part avatar: MultipartBody.Part // File hình ảnh
+    ): Response<UploadAvatarResponse> // Response trả về
 }

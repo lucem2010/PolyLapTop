@@ -3,7 +3,11 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import android.content.SharedPreferences
+import android.net.Uri
+import android.util.Log
 import com.google.gson.Gson
+import java.io.File
+import java.io.FileOutputStream
 
 
 object SharedPrefsManager {
@@ -11,7 +15,21 @@ object SharedPrefsManager {
     private fun getSharedPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences("my_secure_prefs", Context.MODE_PRIVATE)
     }
-
+    fun uriToFile(context: Context, uri: Uri): File? {
+        val contentResolver = context.contentResolver
+        val file = File(context.cacheDir, "avatar.jpg")
+        try {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(file).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("uriToFile", "Error converting Uri to File: ${e.message}")
+            return null
+        }
+        return file
+    }
     // Lưu thông tin tài khoản và mật khẩu
     fun saveLoginInfo(
         context: Context,
